@@ -1,9 +1,9 @@
-package note
+package deckmarkdown.note
 
-import Note
-import Note.ListDeletion
-import Note.ListDeletion.ListType
-import parse.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.Note.ListDeletion
+import deckmarkdown.Note.ListDeletion.ListType
+import deckmarkdown.api.ApiNote
 
 object ListDeletionParser : FullNoteProcessor<ListDeletion> {
     private val LIST_QUESTION_REGEX = "([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()

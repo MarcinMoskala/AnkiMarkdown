@@ -1,3 +1,5 @@
+package deckmarkdown
+
 sealed class Note {
     abstract val id: Long?
 

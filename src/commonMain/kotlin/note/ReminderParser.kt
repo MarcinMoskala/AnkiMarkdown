@@ -1,8 +1,8 @@
-package note
+package deckmarkdown.note
 
-import Note
-import Note.Reminder
-import parse.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.Note.*
+import deckmarkdown.api.ApiNote
 
 object ReminderParser : FullNoteProcessor<Reminder> {
     private val PATTERN = "[Rr](eminder)?:([\\s\\S]+)".toRegex()

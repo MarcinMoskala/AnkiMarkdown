@@ -1,9 +1,9 @@
-package note
+package deckmarkdown.note
 
-import Note
-import Note.Basic
-import Note.BasicAndReverse
-import parse.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.Note.Basic
+import deckmarkdown.Note.BasicAndReverse
+import deckmarkdown.api.ApiNote
 
 object BasicParser : FullNoteProcessor<Basic> {
     private val PATTERN = "[Qq]:([\\s\\S]+)\\n[Aa]:([\\s\\S]+)".toRegex()

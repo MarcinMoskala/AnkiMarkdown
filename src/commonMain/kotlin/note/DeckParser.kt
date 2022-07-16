@@ -1,7 +1,7 @@
-package note
+package deckmarkdown.note
 
-import Note
-import parse.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.api.ApiNote
 
 val DefaultParser = DeckParser(
     processors = listOf(
@@ -29,10 +29,10 @@ class DeckParser(private val processors: List<NoteProcessor<*>>) {
                     NotesTextWithId(null, paragraph)
                 }
             }
-            .map { (id, noteText) ->
+            .mapNotNull { (id, noteText) ->
                 val serializer = processors.filterIsInstance<CardParser<*>>()
-                    .first { it.recognize(noteText) }
-                serializer.parse(id, noteText)
+                    .firstOrNull { it.recognize(noteText) }
+                serializer?.parse(id, noteText)
             }
             .toList()
     }

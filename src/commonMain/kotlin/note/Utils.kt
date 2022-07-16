@@ -1,5 +1,5 @@
-package note
+package deckmarkdown.note
 
-fun String.removeMultipleBreaks() = replace("\\n+".toRegex(), "\n")
-fun String.newLinesToBrs() = replace("\n", "<br>\n")
-fun String.brsToNewLines() = replace("<br>\n".toRegex(), "\n")
+internal fun String.removeMultipleBreaks() = replace("\\n+".toRegex(), "\n")
+internal fun String.newLinesToBrs() = replace("\n", "<br>\n")
+internal fun String.brsToNewLines() = replace("<br>\n".toRegex(), "\n")

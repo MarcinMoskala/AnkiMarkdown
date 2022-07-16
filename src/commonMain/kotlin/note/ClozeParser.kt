@@ -1,8 +1,8 @@
-package note
+package deckmarkdown.note
 
-import Note
-import Note.Cloze
-import parse.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.Note.*
+import deckmarkdown.api.ApiNote
 
 object ClozeParser : FullNoteProcessor<Cloze> {
     private val CLOZE_REGEX = "\\{\\{([^:]+::(.+?))}}".toRegex()
@@ -27,7 +27,7 @@ object ClozeParser : FullNoteProcessor<Cloze> {
         fields = mapOf(TEXT_FIELD to note.text.newLinesToBrs(), "Extra" to comment.newLinesToBrs())
     )
 
-    override fun ankiNoteToCard(apiNote: ApiNote): Cloze = Note.Cloze(
+    override fun ankiNoteToCard(apiNote: ApiNote): Cloze = Cloze(
         apiNote.noteId,
         apiNote.readTextField(TEXT_FIELD)
     )

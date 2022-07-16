@@ -1,90 +1,56 @@
-package com.marcinmoskala.application
+package deckmarkdown
 
-import Note
-import note.DeckParser
-import note.DefaultParser
-import parse.AnkiApi
-import parse.ApiNote
-import parse.RepositoryApi
-import java.io.File
+import deckmarkdown.note.DeckParser
+import deckmarkdown.note.DefaultParser
+import deckmarkdown.api.AnkiApi
+import deckmarkdown.api.ApiNote
+import deckmarkdown.api.RepositoryApi
+import kotlin.js.JsExport
 
 class AnkiConnector(
     private val api: RepositoryApi = AnkiApi(),
     private val parser: DeckParser = DefaultParser
 ) {
-    suspend fun syncFolder(folderName: String) {
-        val notesFile = File(folderName)
-        require(notesFile.exists())
-        require(notesFile.isDirectory)
 
-        syncMedia("$folderName/media")
-
-        notesFile.listFiles()
-            .orEmpty()
-            .filterNot { it.isDirectory }
-            .forEach { pushFile(it) }
-    }
-
-    suspend fun pushFile(file: File) {
-        require(file.exists())
-
-        val name = file.name.replace(".md", "")
-        val body = file.readText()
-        val (text, comment) = separateComment(body)
-        val notes = storeOrUpdateNoteText(
-            deckName = name,
+    suspend fun pushDeck(deckName: String, markdown: String): AnkiConnectorResult {
+        require(deckName.isNotBlank())
+        require(markdown.isNotBlank())
+        val (text, comment) = separateComment(markdown)
+        return storeOrUpdateNoteText(
+            deckName = deckName,
             noteContent = text.dropMediaFolderPrefix(),
             comment = comment.orEmpty()
         )
-        writeToFile(notes, comment, file)
-        File("docs/$name.md").writeText(
-            parser.markdownWriteNotes(notes)
-        )
-        File("docs/$name.html").writeText(
-            parser.htmlWriteNotes(notes)
-        )
     }
 
-    suspend fun pullFile(file: File) {
-        val name = file.name.replace(".md", "")
-        val body = file.readText()
-        val (text, comment) = separateComment(body)
+    suspend fun pullDeckToExisting(deckName: String, currentMarkdown: String): AnkiConnectorResult {
+        val (text, comment) = separateComment(currentMarkdown)
         val noteContent = text.dropMediaFolderPrefix()
-        val currentAnkiNotes: List<Note> = api.getNotesInDeck(name).map { parser.apiNoteToNote(it) }
+        val currentAnkiNotes: List<Note> = api.getNotesInDeck(deckName).map { parser.apiNoteToNote(it) }
         val currentAnkiNotesByIds: Map<Long?, Note> = currentAnkiNotes.associateBy { it.id }
         val currentFileNotes: List<Note> = parser.parseNotes(noteContent)
         val currentFileNotesIds = currentFileNotes.map { it.id }.toSet()
         val updatedFileNotes = currentFileNotes.mapNotNull { if (it is Note.Text) it else currentAnkiNotesByIds[it.id] }
         val newFileNotes = currentAnkiNotes.filter { it.id !in currentFileNotesIds }
         val allFileNotes = updatedFileNotes + newFileNotes
-        writeToFile(allFileNotes, comment, file)
+        return AnkiConnectorResult(
+            updatedMarkdown = notesToMarkdown(allFileNotes, comment)
+        )
     }
 
-    suspend fun syncMedia(folderName: String) {
-        val notesFile = File(folderName)
-
-        if (!notesFile.exists() || !notesFile.isDirectory) return
-
-        notesFile.listFiles()!!.forEach { file ->
-            // TODO
-//            api.storeMediaFile(file)
-        }
-    }
-
-    suspend fun readNotesFromDeck(deckName: String): List<Note> =
-        api.getNotesInDeck(deckName)
+    suspend fun pullDeck(deckName: String, comment: String? = null): AnkiConnectorResult {
+        val notes = api.getNotesInDeck(deckName)
             .map(parser::apiNoteToNote)
-
-    suspend fun writeNotesToFile(deckName: String, file: File, comment: String? = null) {
-        val notes = readNotesFromDeck(deckName)
-        writeToFile(notes, comment, file)
+        return AnkiConnectorResult(
+            updatedMarkdown = notesToMarkdown(notes, comment)
+        )
     }
 
-    private fun writeToFile(notes: List<Note>, comment: String?, file: File) {
+    private fun notesToMarkdown(notes: List<Note>, comment: String?): String {
         val textAfter = parser.writeNotes(notes)
         val bodyAfter = comment?.let { "$it\n***\n\n" }
             .orEmpty() + textAfter.addMediaFolderPrefix()
-        file.writeText(bodyAfter)
+        return bodyAfter
     }
 
     private data class TextAndComment(val text: String, val comment: String? = null)
@@ -98,7 +64,7 @@ class AnkiConnector(
         return TextAndComment(text.substringAfter("\n\n"), introText)
     }
 
-    suspend fun storeOrUpdateNoteText(deckName: String, noteContent: String, comment: String): List<Note> {
+    suspend fun storeOrUpdateNoteText(deckName: String, noteContent: String, comment: String): AnkiConnectorResult {
         if (!api.connected()) {
             error("This function requires opened Anki with installed Anki Connect plugin. Details in ReadMe.md")
         }
@@ -141,9 +107,24 @@ class AnkiConnector(
         })
 
         println("In deck $deckName added $addedCount, updated $updatedCount, removed $removedCount, letf unchanged: $leftUnchanged")
-        return newCards
+        return AnkiConnectorResult(
+            updatedMarkdown = notesToMarkdown(newCards, comment),
+            addedCount = addedCount,
+            updatedCount = updatedCount,
+            removedCount = removedCount,
+            unchangedCount = leftUnchanged,
+        )
     }
 }
+
+@JsExport
+class AnkiConnectorResult(
+    val updatedMarkdown: String,
+    val addedCount: Int = 0,
+    val updatedCount: Int = 0,
+    val removedCount: Int = 0,
+    val unchangedCount: Int = 0,
+)
 
 private fun String.containsOnly(text: String): Boolean = this.replace("*", "").isEmpty()
 

@@ -22,9 +22,13 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js(LEGACY) {
+    js(IR) {
+        moduleName = "ankimarkdown"
         nodejs()
-        binaries.executable()
+        binaries.library()
+        compilations["main"].packageJson {
+            customField("private", false)
+        }
     }
     sourceSets {
         val ktorVersion = "2.0.3"
@@ -49,6 +53,7 @@ kotlin {
                 implementation("io.ktor:ktor-server-netty:2.0.1")
                 implementation("io.ktor:ktor-server-html-builder-jvm:2.0.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
+                implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
             }
         }
         val jvmTest by getting

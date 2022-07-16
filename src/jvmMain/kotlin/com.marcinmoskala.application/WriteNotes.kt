@@ -1,10 +1,10 @@
 package com.marcinmoskala.application
 
 import kotlinx.coroutines.coroutineScope
-import note.DefaultParser
+import deckmarkdown.note.DefaultParser
 
 suspend fun main() = coroutineScope<Unit> {
-    val notes = AnkiConnector()
+    val notes = AnkiConnectorJvm()
         .readNotesFromDeck(deckName = "Wiedza::Techniczne::Modele_Predykcyjne")
 
     println("Pure:")

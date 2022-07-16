@@ -1,8 +1,8 @@
-package note
+package deckmarkdown.note
 
-import Note
-import Note.Text
-import parse.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.Note.*
+import deckmarkdown.api.ApiNote
 
 /*
  Text note represents pure text without that is not translated to any real note in Anki.

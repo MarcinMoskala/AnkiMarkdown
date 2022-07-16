@@ -1,8 +1,8 @@
-package note
+package deckmarkdown.note
 
-import Note
-import Note.General
-import parse.ApiNote
+import deckmarkdown.api.ApiNote
+import deckmarkdown.Note
+import deckmarkdown.Note.General
 
 // TODO
 /*

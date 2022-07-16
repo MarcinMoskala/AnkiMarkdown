@@ -1,8 +1,8 @@
 //import kotlinx.coroutines.coroutineScope
-//import parse.AnkiApi
-//import parse.ApiNote
-//import parse.ApiNoteModel
-//import parse.CardTemplate
+//import deckmarkdown.api.AnkiApi
+//import deckmarkdown.api.ApiNote
+//import deckmarkdown.api.ApiNoteModel
+//import deckmarkdown.api.CardTemplate
 //
 //suspend fun main() = coroutineScope<Unit> {
 //    val api = AnkiApi()

@@ -18,7 +18,6 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -32,3 +31,14 @@ jobs:
       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
       with:
         arguments: build
+    - name: Pushes js file
+      uses: dmnemec/copy_file_to_another_repo_action@main
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+      with:
+        source_file: 'test2.md'
+        destination_repo: 'dmnemec/release-test'
+        destination_folder: 'test-dir'
+        user_email: 'example@email.com'
+        user_name: 'dmnemec'
+        commit_message: 'A custom message for the commit'
