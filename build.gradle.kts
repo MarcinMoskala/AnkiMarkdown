@@ -1,11 +1,15 @@
+import java.util.*
+
 plugins {
     kotlin("multiplatform") version "1.7.0-RC"
     kotlin("plugin.serialization") version "1.6.21"
+    id("dev.petuska.npm.publish") version "3.0.1"
     java
 }
 
 group = "com.marcinmoskala"
-version = "1.0-SNAPSHOT"
+val libVersion =  "0.3.0"
+version = libVersion
 
 repositories {
     mavenCentral()
@@ -24,6 +28,7 @@ kotlin {
     }
     js(IR) {
         moduleName = "ankimarkdown"
+        browser()
         nodejs()
         binaries.library()
         compilations["main"].packageJson {
@@ -65,5 +70,24 @@ kotlin {
             }
         }
         val jsTest by getting
+    }
+}
+
+val properties = Properties().apply {
+    load(rootProject.file("local.properties").reader())
+}
+
+npmPublish {
+    packages {
+        register("jsNpmPublish") {
+            packageName.set("ankimarkdown")
+            version.set(libVersion)
+        }
+    }
+    registries {
+        register("npmjs") {
+            uri.set(uri("https://registry.npmjs.org")) //
+            authToken.set(properties["npmSecret"] as String)
+        }
     }
 }

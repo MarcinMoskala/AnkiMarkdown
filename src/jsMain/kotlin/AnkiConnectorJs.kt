@@ -1,16 +1,12 @@
 package deckmarkdown
 
 import deckmarkdown.api.AnkiApi
-import deckmarkdown.api.ApiNote
-import deckmarkdown.api.RepositoryApi
-import deckmarkdown.note.DeckParser
 import deckmarkdown.note.DefaultParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.promise
 import kotlin.js.Promise
 
-@OptIn(ExperimentalJsExport::class)
 @JsExport
 class AnkiConnectorJs {
     private val connector = AnkiConnector(AnkiApi(), DefaultParser)
