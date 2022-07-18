@@ -1,11 +1,8 @@
-package fakes
+package ankimarkdown.fakes
 
-import deckmarkdown.api.AnkiApi
 import deckmarkdown.api.ApiNote
 import deckmarkdown.api.ApiNoteModel
 import deckmarkdown.api.RepositoryApi
-import java.io.File
-import kotlin.random.Random
 
 class FakeAnkiApi : RepositoryApi {
     var notes = listOf<ApiNote>()
@@ -16,6 +13,15 @@ class FakeAnkiApi : RepositoryApi {
         private set
     var removeUsedCount = 0
         private set
+    var nextId = 0L
+
+    fun clean() {
+        this.notes = emptyList()
+        addUsedCount = 0
+        updateUsedCount = 0
+        removeUsedCount = 0
+        nextId = 0L
+    }
 
     fun hasNotes(vararg notes: ApiNote) {
         this.notes = notes.toList()
@@ -27,7 +33,7 @@ class FakeAnkiApi : RepositoryApi {
         addUsedCount++
         val apiNote =
             if (apiNote.hasId) apiNote
-            else apiNote.copy(noteId = Random.nextLong())
+            else apiNote.copy(noteId = nextId++)
         notes = notes + apiNote
         return apiNote
     }

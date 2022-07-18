@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.marcinmoskala"
-val libVersion =  "0.3.0"
+val libVersion =  "0.0.9"
 version = libVersion
 
 repositories {
@@ -27,20 +27,15 @@ kotlin {
         }
     }
     js(IR) {
-        moduleName = "ankimarkdown"
         browser()
-        nodejs()
         binaries.library()
-        compilations["main"].packageJson {
-            customField("private", false)
-        }
     }
     sourceSets {
         val ktorVersion = "2.0.3"
 
         val commonMain by getting {
             dependencies {
-                implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt")
+                implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
 
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -51,6 +46,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
             }
         }
         val jvmMain by getting {
@@ -79,8 +75,8 @@ val properties = Properties().apply {
 
 npmPublish {
     packages {
-        register("jsNpmPublish") {
-            packageName.set("ankimarkdown")
+        named("js") {
+            packageName.set("anki-markdown")
             version.set(libVersion)
         }
     }

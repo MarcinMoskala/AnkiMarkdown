@@ -1,4 +1,4 @@
-//import fakes.FakeAnkiApi
+//import ankimarkdown.fakes.FakeAnkiApi
 //import kotlinx.coroutines.runBlocking
 //import deckmarkdown.note.ClozeParser
 //import deckmarkdown.note.DefaultParser

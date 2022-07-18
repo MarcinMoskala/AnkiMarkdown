@@ -11,6 +11,9 @@ class AnkiConnector(
     private val api: RepositoryApi = AnkiApi(),
     private val parser: DeckParser = DefaultParser
 ) {
+    suspend fun checkConnection(): Boolean = api.connected()
+
+    suspend fun getDeckNames(): List<String> = api.getDecks()
 
     suspend fun pushDeck(deckName: String, markdown: String): AnkiConnectorResult {
         require(deckName.isNotBlank())
@@ -80,7 +83,9 @@ class AnkiConnector(
         val currentIds = currentCards.map { it.noteId }
 
         val removedCardIds = currentIds - notes.mapNotNull { it.id }.toSet()
-        api.deleteNotes(removedCardIds.toSet())
+        if (removedCardIds.isNotEmpty()) {
+            api.deleteNotes(removedCardIds.toSet())
+        }
 
         val removedCount = removedCardIds.size
         var addedCount = 0

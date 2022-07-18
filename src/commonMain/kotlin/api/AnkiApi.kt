@@ -10,6 +10,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import deckmarkdown.note.removeMultipleBreaks
+import io.ktor.http.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonObject
 
 interface RepositoryApi {
     suspend fun connected(): Boolean
@@ -25,6 +29,31 @@ interface RepositoryApi {
 //    suspend fun storeMediaFile(file: File)
 }
 
+@Serializable
+data class ResultWithListOfString(
+    val result: List<String>?,
+    val error: String? = null
+)
+
+@Serializable
+data class ResultWithListOfLongs(
+    val result: List<Long>?,
+    val error: String? = null
+)
+
+@Serializable
+data class ResultWithId(
+    val result: Long?,
+    val error: String? = null
+)
+
+@Serializable
+data class ResultWithNoteReceiveDataApiList(
+    val result: List<NoteReceiveDataApi>?,
+    val error: String? = null
+)
+
+@Serializable
 data class ResultWrapper<T>(val result: T? = null, val error: String? = null)
 
 sealed class ApiNoteOrText
@@ -48,17 +77,20 @@ data class ApiNote(
     }
 }
 
+@Serializable
 data class ApiNoteModel(
     val modelName: String,
     val inOrderFields: List<String>,
     val cardTemplates: List<CardTemplate>
 )
 
+@Serializable
 data class CardTemplate(
     val Front: String,
     val Back: String
 )
 
+@Serializable
 data class NoteReceiveDataApi(
     val noteId: Long,
     val modelName: String,
@@ -73,12 +105,16 @@ data class NoteReceiveDataApi(
     )
 }
 
+@Serializable
 data class OrderedField(
     val value: String,
     val order: Int
 )
 
 class AnkiApi : RepositoryApi {
+    private val json = Json {
+        ignoreUnknownKeys = true
+    }
     private val url = "http://localhost:8765"
     private val client = HttpClient {
         install(ContentNegotiation) {
@@ -89,86 +125,75 @@ class AnkiApi : RepositoryApi {
     override suspend fun connected(): Boolean = try {
         client.post(url).status.value in 100..300
     } catch (exception: Throwable) {
-        exception.printStackTrace()
         false
     }
 
     override suspend fun getNotesInDeck(deckName: String): List<ApiNote> {
-        val res = client.post(url) {
-            setBody("""{"action": "findNotes", "version": 6, "params": {"query": "deck:$deckName"}}""")
-        }.body<ResultWrapper<List<String>>>()
+        val res = request<ResultWithListOfLongs>("findNotes", """{"query": "deck:$deckName"}""")
         val notesIds = res.result ?: throw Error(res.error)
         val idsAsString = notesIds.joinToString(prefix = "[", postfix = "]", separator = ", ")
 
-        val res2 = client.post(url) {
-            setBody("""{"action": "notesInfo", "version": 6, "params": {"notes": $idsAsString}}""")
-        }.body<ResultWrapper<List<NoteReceiveDataApi>>>()
+        val res2 = request<ResultWithNoteReceiveDataApiList>("notesInfo", """{"notes": $idsAsString}""")
         return res2.result
             ?.map { it.toNoteData(deckName) }
             ?: throw Error("${res2.error} for $deckName")
     }
 
     override suspend fun addNote(apiNote: ApiNote): ApiNote {
-        val noteStr = Json.encodeToString(apiNote)
-        val res = client.post(url) {
-            setBody("""{"action": "addNote", "version": 6, "params": {"note": $noteStr}}""")
-        }.body<ResultWrapper<Long>>()
-        val id = res.result ?: throw Error("${res.error} for $apiNote")
+        val noteStr = json.encodeToString(apiNote)
+        val res = request<ResultWithId>("addNote", """{"note": $noteStr}""")
+        val id = res.result ?: throw Error("Error while adding note $noteStr")
         return apiNote.copy(noteId = id)
     }
 
     override suspend fun updateNoteFields(apiNote: ApiNote): ApiNote {
-        val fieldsStr = Json.encodeToString(apiNote.fields)
-        val res = client.post(url) {
-            setBody("""{"action": "updateNoteFields", "version": 6, "params": { "note": { "id": ${apiNote.noteId}, "fields": $fieldsStr}}}""")
-        }.body<ResultWrapper<Any?>>()
-        if (res?.error != null) throw Error("${res.error} for $apiNote")
+        val fieldsStr = json.encodeToString(apiNote.fields)
+        call("updateNoteFields", """{ "note": { "id": ${apiNote.noteId}, "fields": $fieldsStr}}""")
         return apiNote
     }
 
     override suspend fun createDeck(name: String) {
-        val res = client.post(url) {
-            setBody("""{"action": "createDeck", "version": 6, "params": {"deck": "$name"}}""")
-        }.body<ResultWrapper<Long>>()
-        if (res.error != null) throw Error("${res.error} for $name")
+        call("createDeck", """{"deck": "$name"}""")
     }
 
     override suspend fun removeDeck(name: String) {
-        val res = client.post(url) {
-            setBody("""{"action": "deleteDecks", "version": 6, "params": {"decks": ["$name"], "cardsToo": true}}""")
-        }.body<ResultWrapper<Long>>()
-        if (res.error != null) throw Error("${res.error} for $name")
+        call("deleteNotes", """{"decks": ["$name"], "cardsToo": true}""")
     }
 
     override suspend fun deleteNotes(ids: Set<Long>) {
         val idsAsString = ids.joinToString(prefix = "[", postfix = "]", separator = ", ")
-        val res = client.post(url) {
-            val bodyText = """{"action": "deleteNotes", "version": 6, "params": {"notes": $idsAsString}}"""
-            setBody(bodyText)
-        }.body<ResultWrapper<Any?>>()
-        if (res?.error != null) throw Error("${res.error} for $ids")
+        call("deleteNotes", """{"notes": $idsAsString}""")
     }
 
     override suspend fun getDecks(): List<String> {
-        val res = client.post(url) {
-            setBody("""{"action": "deckNames", "version": 6}""")
-        }.body<ResultWrapper<List<String>>>()
+        val res = request<ResultWithListOfString>("deckNames")
         return res.result ?: throw Error(res.error)
     }
 
     override suspend fun getModelsNames(): List<String> {
-        val res = client.post(url) {
-            setBody("""{"action": "modelNames", "version": 6}""")
-        }.body<ResultWrapper<List<String>>>()
+        val res = request<ResultWithListOfString>("modelNames")
         return res.result ?: throw Error(res.error)
     }
 
     override suspend fun addModel(model: ApiNoteModel) {
-        val modelStr = Json.encodeToString(model)
-        val res = client.post(url) {
-            setBody("""{"action": "createModel", "version": 6, "params": $modelStr}""")
-        }.body<ResultWrapper<Any?>>()
-        if (res?.error != null) throw Error("${res.error} for $model (str $modelStr)")
+        call("createModel", json.encodeToString(model))
+    }
+
+    private suspend fun call(action: String, params: String) {
+        val resText = client.post(url) {
+            setBody("""{"action": "$action", "version": 6, "params": $params}""")
+        }.body<String>()
+        val res = json.parseToJsonElement(resText)
+        if (res.jsonObject["error"] != JsonNull) throw Error("${res.jsonObject["error"]} for $action and params $params")
+    }
+
+    private suspend inline fun <reified T> request(action: String, params: String? = null): T {
+        val resText = client.post(url) {
+            val paramsBody = if (params != null) """, "params": $params""" else ""
+            setBody("""{"action": "$action", "version": 6 $paramsBody}""")
+        }.body<String>()
+        println(resText)
+        return json.decodeFromString(resText)
     }
 // TODO
 //    override suspend fun storeMediaFile(file: File) {

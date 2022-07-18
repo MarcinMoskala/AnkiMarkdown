@@ -5,8 +5,8 @@ import deckmarkdown.Note.*
 import deckmarkdown.api.ApiNote
 
 object ClozeParser : FullNoteProcessor<Cloze> {
-    private val CLOZE_REGEX = "\\{\\{([^:]+::(.+?))}}".toRegex()
-    private val STANDALONE_BRACKET_REGEX = "\\{\\{([^}{]+)}}".toRegex()
+    private val CLOZE_REGEX = "\\{\\{([^:]+::(.+?))\\}\\}".toRegex()
+    private val STANDALONE_BRACKET_REGEX = "\\{\\{([^}{]+)\\}\\}".toRegex()
     private const val API_NOTE_NAME = "Cloze"
     const val TEXT_FIELD = "Text"
 
