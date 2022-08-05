@@ -17,7 +17,7 @@ class AnkiConnector(
 
     suspend fun getDeckNames(): List<String> = api.getDecks()
 
-    fun generateArticle(fileName: String, fileContent: String): FileResult? {
+    fun generateArticle(fileContent: String): FileResult? {
         val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
         val articleFileName = headerConfig?.articleFileName ?: return null
         return FileResult(

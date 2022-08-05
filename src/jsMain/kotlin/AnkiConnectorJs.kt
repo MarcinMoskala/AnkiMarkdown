@@ -24,8 +24,8 @@ class AnkiConnectorJs {
         connector.getDeckNames().toTypedArray()
     }
 
-    fun generateArticle(fileName: String, fileContent: String): FileResult? =
-        connector.generateArticle(fileName, fileContent)
+    fun generateArticle(fileContent: String): FileResult? =
+        connector.generateArticle(fileContent)
 
     fun exportAnkiPackage(fileName: String, fileContent: String): Promise<Boolean> = scope.promise {
         connector.exportAnkiPackage(fileName, fileContent)
