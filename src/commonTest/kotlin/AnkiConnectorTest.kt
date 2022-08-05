@@ -182,6 +182,8 @@ class AnkiConnectorTest {
         val expectedMarkdown = """   
             ---
             deckName: A_Deck
+            articleFileName: null
+            packageDestination: null
             ---
 
             @1
@@ -221,6 +223,8 @@ class AnkiConnectorTest {
         val content = """
             ---
             deckName: A_Deck
+            articleFileName: null
+            packageDestination: null
             ---
             
             @123
@@ -234,6 +238,31 @@ class AnkiConnectorTest {
         // when
         val result1 = connect.pushFile("A_File", content)
         val result2 = connect.pullFile("A_Deck")
+
+        // then
+        assertEquals(result1.markdown, result2.markdown)
+        assertEquals(result2.markdown, result2.markdown)
+    }
+
+    @Test
+    fun pushAndPullToExistingDoNotLooseData() = runTest {
+        // given
+        val content = """
+            ---
+            deckName: A_Deck
+            ---
+            
+            @123
+            q: This is a question
+            a: This is an answer!
+
+            @456
+            This is a {{c1::cloze}}
+        """.trimIndent()
+
+        // when
+        val result1 = connect.pushFile("A_File", content)
+        val result2 = connect.pullDeckToExistingFile("A_Deck", content)
 
         // then
         assertEquals(result1.markdown, result2.markdown)

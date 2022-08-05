@@ -70,6 +70,10 @@ class FakeAnkiApi : RepositoryApi {
         TODO()
     }
 
+    override suspend fun exportPackage(deckName: String, packageDestination: String, includeScheduled: Boolean) {
+        TODO("Not yet implemented")
+    }
+
 //    override suspend fun storeMediaFile(file: File) {
 //        TODO()
 //    }

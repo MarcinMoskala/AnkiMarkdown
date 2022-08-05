@@ -10,7 +10,7 @@ object ReminderParser : FullNoteProcessor<Reminder> {
 
     override fun handlesNote(note: Note): Boolean = note is Reminder
 
-    override fun recognize(text: String): Boolean = PATTERN in text
+    override fun recognize(text: String): Boolean = PATTERN.matches(text)
 
     override fun parse(id: Long?, noteText: String): Reminder =
         Reminder(id, noteText.substringAfter(":").trim())

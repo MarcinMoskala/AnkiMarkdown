@@ -6,7 +6,7 @@ import deckmarkdown.Note.ListDeletion.ListType
 import deckmarkdown.api.ApiNote
 
 object ListDeletionParser : FullNoteProcessor<ListDeletion> {
-    private val LIST_QUESTION_REGEX = "([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()
+    private val LIST_QUESTION_REGEX = "^([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()
     private val LIST_ITEM_REGEX = "\\*\\s*([^\\n]*)(\\n([^*]*))?".toRegex()
 
     private val API_NOTE_TO_TYPE = mapOf(

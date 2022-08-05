@@ -11,7 +11,7 @@ object BasicParser : FullNoteProcessor<Basic> {
 
     override fun handlesNote(note: Note): Boolean = note is Basic
 
-    override fun recognize(text: String): Boolean = PATTERN in text
+    override fun recognize(text: String): Boolean = PATTERN.matches(text)
 
     override fun parse(id: Long?, noteText: String): Basic {
         val (question, answer) = parseQA(noteText, PATTERN)

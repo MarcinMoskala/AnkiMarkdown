@@ -60,9 +60,10 @@ class AnkiConnector(
     }
 
     suspend fun pullDeckToExistingFile(fileName: String, fileContent: String): AnkiConnectorResult {
-        val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
+        val (markdown, headerConfig, originalHeader) = separateHeaderFromFile(fileContent)
         val deckName = chooseDeckName(headerConfig, fileName)
-        return pullDeckToExisting(deckName, markdown)
+        val pullDeckResult = pullDeckToExisting(deckName, markdown)
+        return pullDeckResult.copy(originalHeader + pullDeckResult.markdown)
     }
 
     suspend fun pushDeck(deckName: String, markdown: String): AnkiConnectorResult {
