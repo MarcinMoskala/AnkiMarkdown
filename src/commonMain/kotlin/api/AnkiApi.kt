@@ -26,6 +26,7 @@ interface RepositoryApi {
     suspend fun getDecks(): List<String>
     suspend fun getModelsNames(): List<String>
     suspend fun addModel(model: ApiNoteModel)
+    suspend fun exportPackage(deckName: String, packageDestination: String, includeScheduled: Boolean)
 //    suspend fun storeMediaFile(file: File)
 }
 
@@ -74,6 +75,12 @@ data class ApiNote(
 
     companion object {
         const val NO_ID = -1L
+
+        fun basic(id: Long, deckName: String, front: String, back: String) =
+            ApiNote(noteId = id, deckName = deckName, modelName = "Basic", fields = mapOf("Front" to front, "Back" to back))
+
+        fun cloze(id: Long, deckName: String, text: String) =
+            ApiNote(noteId = id, deckName = deckName, modelName = "Cloze", fields = mapOf("Text" to text))
     }
 }
 
@@ -177,6 +184,10 @@ class AnkiApi : RepositoryApi {
 
     override suspend fun addModel(model: ApiNoteModel) {
         call("createModel", json.encodeToString(model))
+    }
+
+    override suspend fun exportPackage(deckName: String, packageDestination: String, includeScheduled: Boolean) {
+        call("exportPackage", """{"deck": "$deckName", "path": "$packageDestination", "includeSched": $includeScheduled}""")
     }
 
     private suspend fun call(action: String, params: String) {

@@ -37,6 +37,7 @@ kotlin {
             dependencies {
                 implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+                implementation("net.mamoe.yamlkt:yamlkt:0.10.2")
 
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
@@ -51,20 +52,11 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-server-netty:2.0.1")
-                implementation("io.ktor:ktor-server-html-builder-jvm:2.0.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
                 implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
             }
         }
         val jvmTest by getting
-        val jsMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-react:18.0.0-pre.332-kotlin-1.6.21")
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-react-dom:18.0.0-pre.332-kotlin-1.6.21")
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-emotion:11.9.0-pre.332-kotlin-1.6.21")
-            }
-        }
+        val jsMain by getting
         val jsTest by getting
     }
 }

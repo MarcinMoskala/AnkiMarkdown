@@ -5,6 +5,8 @@ import deckmarkdown.note.DefaultParser
 import deckmarkdown.api.AnkiApi
 import deckmarkdown.api.ApiNote
 import deckmarkdown.api.RepositoryApi
+import kotlinx.serialization.Serializable
+import net.mamoe.yamlkt.Yaml
 import kotlin.js.JsExport
 
 class AnkiConnector(
@@ -15,59 +17,86 @@ class AnkiConnector(
 
     suspend fun getDeckNames(): List<String> = api.getDecks()
 
+    fun generateArticle(fileName: String, fileContent: String): FileResult? {
+        val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
+        val articleFileName = headerConfig?.articleFileName ?: return null
+        return FileResult(
+            name = articleFileName,
+            content = markdown
+                .let(parser::parseNotes)
+                .let(parser::markdownWriteNotes)
+        )
+    }
+
+    /*
+    Used to generate Anki package in `.apkg` format based on the previously pushed notes.
+    To generate a package with the current notes, use `pushFile` first.
+     */
+    suspend fun exportAnkiPackage(fileName: String, fileContent: String): Boolean {
+        val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
+        val packageDestination = headerConfig?.packageDestination ?: return false
+        val deckName = chooseDeckName(headerConfig, fileName)
+        api.exportPackage(deckName, packageDestination, false)
+        return true
+    }
+
+    suspend fun pushFile(fileName: String, fileContent: String): AnkiConnectorResult {
+        val (markdown, headerConfig, originalHeader) = separateHeaderFromFile(fileContent)
+        val deckName = chooseDeckName(headerConfig, fileName)
+        val result = pushDeck(deckName, markdown)
+        return AnkiConnectorResult(
+            markdown = originalHeader + result.markdown
+        )
+    }
+
+    suspend fun pullFile(deckName: String): AnkiConnectorResult {
+        val markdown = api.getNotesInDeck(deckName)
+            .map(parser::apiNoteToNote)
+            .let(parser::writeNotes)
+        val header = headerToText(HeaderConfig(deckName = deckName))
+        return AnkiConnectorResult(
+            markdown = header + markdown
+        )
+    }
+
+    suspend fun pullDeckToExistingFile(fileName: String, fileContent: String): AnkiConnectorResult {
+        val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
+        val deckName = chooseDeckName(headerConfig, fileName)
+        return pullDeckToExisting(deckName, markdown)
+    }
+
     suspend fun pushDeck(deckName: String, markdown: String): AnkiConnectorResult {
         require(deckName.isNotBlank())
         require(markdown.isNotBlank())
-        val (text, comment) = separateComment(markdown)
         return storeOrUpdateNoteText(
             deckName = deckName,
-            noteContent = text.dropMediaFolderPrefix(),
-            comment = comment.orEmpty()
+            noteContent = markdown,
+            comment = ""
         )
     }
 
+    suspend fun pullDeck(deckName: String): AnkiConnectorResult =
+        AnkiConnectorResult(
+            markdown = api.getNotesInDeck(deckName)
+                .map(parser::apiNoteToNote)
+                .let(parser::writeNotes)
+        )
+
     suspend fun pullDeckToExisting(deckName: String, currentMarkdown: String): AnkiConnectorResult {
-        val (text, comment) = separateComment(currentMarkdown)
-        val noteContent = text.dropMediaFolderPrefix()
-        val currentAnkiNotes: List<Note> = api.getNotesInDeck(deckName).map { parser.apiNoteToNote(it) }
+        val currentAnkiNotes: List<Note> = api.getNotesInDeck(deckName)
+            .map(parser::apiNoteToNote)
         val currentAnkiNotesByIds: Map<Long?, Note> = currentAnkiNotes.associateBy { it.id }
-        val currentFileNotes: List<Note> = parser.parseNotes(noteContent)
+        val currentFileNotes: List<Note> = parser.parseNotes(currentMarkdown)
         val currentFileNotesIds = currentFileNotes.map { it.id }.toSet()
-        val updatedFileNotes = currentFileNotes.mapNotNull { if (it is Note.Text) it else currentAnkiNotesByIds[it.id] }
+        val updatedFileNotes = currentFileNotes.mapNotNull { if (it is Note.Text || it.id == null) it else currentAnkiNotesByIds[it.id] }
         val newFileNotes = currentAnkiNotes.filter { it.id !in currentFileNotesIds }
         val allFileNotes = updatedFileNotes + newFileNotes
         return AnkiConnectorResult(
-            updatedMarkdown = notesToMarkdown(allFileNotes, comment)
+            markdown = parser.writeNotes(allFileNotes),
         )
     }
 
-    suspend fun pullDeck(deckName: String, comment: String? = null): AnkiConnectorResult {
-        val notes = api.getNotesInDeck(deckName)
-            .map(parser::apiNoteToNote)
-        return AnkiConnectorResult(
-            updatedMarkdown = notesToMarkdown(notes, comment)
-        )
-    }
-
-    private fun notesToMarkdown(notes: List<Note>, comment: String?): String {
-        val textAfter = parser.writeNotes(notes)
-        val bodyAfter = comment?.let { "$it\n***\n\n" }
-            .orEmpty() + textAfter.addMediaFolderPrefix()
-        return bodyAfter
-    }
-
-    private data class TextAndComment(val text: String, val comment: String? = null)
-
-    private fun separateComment(text: String): TextAndComment {
-        val possibleIntroTextWithSeparator = text.substringBefore("\n\n")
-        val lastLine = possibleIntroTextWithSeparator.substringAfterLast("\n").trimEnd()
-        val isHeaderEnding = lastLine.containsOnly("*") && lastLine.length >= 3
-        if (!isHeaderEnding) return TextAndComment(text)
-        val introText = possibleIntroTextWithSeparator.substringBeforeLast("\n")
-        return TextAndComment(text.substringAfter("\n\n"), introText)
-    }
-
-    suspend fun storeOrUpdateNoteText(deckName: String, noteContent: String, comment: String): AnkiConnectorResult {
+    private suspend fun storeOrUpdateNoteText(deckName: String, noteContent: String, comment: String): AnkiConnectorResult {
         if (!api.connected()) {
             error("This function requires opened Anki with installed Anki Connect plugin. Details in ReadMe.md")
         }
@@ -113,32 +142,75 @@ class AnkiConnector(
 
         println("In deck $deckName added $addedCount, updated $updatedCount, removed $removedCount, letf unchanged: $leftUnchanged")
         return AnkiConnectorResult(
-            updatedMarkdown = notesToMarkdown(newCards, comment),
-            addedCount = addedCount,
-            updatedCount = updatedCount,
-            removedCount = removedCount,
-            unchangedCount = leftUnchanged,
+            markdown = parser.writeNotes(newCards),
+            ankiModificationsCounts = AnkiConnectorResult.ModificationsCounts(
+                addedCount = addedCount,
+                updatedCount = updatedCount,
+                removedCount = removedCount,
+                unchangedCount = leftUnchanged,
+            )
         )
     }
+
+    data class HeaderSeparationResult(
+        val markdown: String,
+        val headerConfig: HeaderConfig?,
+        val originalHeader: String?,
+    )
+
+    private fun separateHeaderFromFile(fileContent: String): HeaderSeparationResult {
+        val matchResult = Regex("""^(---([\w\W]*)\n---[\n]+)([\w\W]*)""")
+            .find(fileContent.trim())
+            ?: return HeaderSeparationResult(fileContent, null, null)
+        val markdown = matchResult.groupValues[3]
+        val originalHeader = matchResult.groupValues[1]
+        val headerContent = matchResult.groupValues[2]
+        val headerConfig = Yaml.decodeFromString(HeaderConfig.serializer(), headerContent)
+        return HeaderSeparationResult(markdown, headerConfig, originalHeader)
+    }
+
+    private fun headerToText(headerConfig: HeaderConfig): String =
+        Yaml.encodeToString(HeaderConfig.serializer(), headerConfig)
+            .let { "---\n$it\n---\n\n" }
+
+    private fun chooseDeckName(headerConfig: HeaderConfig?, fileName: String) =
+        headerConfig?.deckName
+            ?: fileName
+                .replace("__", "::")
+                .substringBefore(".")
 }
 
 @JsExport
-class AnkiConnectorResult(
-    val updatedMarkdown: String,
-    val addedCount: Int = 0,
-    val updatedCount: Int = 0,
-    val removedCount: Int = 0,
-    val unchangedCount: Int = 0,
+@Serializable
+class HeaderConfig(
+    val deckName: String? = null,
+    val articleFileName: String? = null,
+    val packageDestination: String? = null,
+//    val generalComment: String? = null,
+//    val resourcesFile:String? = null
 )
 
-private fun String.containsOnly(text: String): Boolean = this.replace("*", "").isEmpty()
-
-/**
- * This is done because all media files needs to be located in "media", but later in Anki
- * they are all by default in the folder containing all media
- */
-private fun String.dropMediaFolderPrefix(): String = this.replace("\"media/", "\"")
-
-private fun String.addMediaFolderPrefix(): String = this.replace("<img src=\"([\\w.]*)\"".toRegex()) {
-    "<img src=\"media/${it.groupValues[1]}\""
+@JsExport
+data class AnkiConnectorResult(
+    val markdown: String,
+    val ankiModificationsCounts: ModificationsCounts? = null
+) {
+    class ModificationsCounts(
+        val addedCount: Int = 0,
+        val updatedCount: Int = 0,
+        val removedCount: Int = 0,
+        val unchangedCount: Int = 0,
+    )
 }
+
+@JsExport
+data class FileResult(
+    val name: String,
+    val content: String,
+)
+
+//private fun String.dropMediaFolderPrefix(): String = this.replace("\"media/", "\"")
+//
+//private fun String.addMediaFolderPrefix(): String = this.replace("<img src=\"([\\w.]*)\"".toRegex()) {
+//    "<img src=\"media/${it.groupValues[1]}\""
+//}
