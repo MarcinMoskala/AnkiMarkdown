@@ -75,7 +75,7 @@ class AnkiConnectorTest {
         """.trimIndent()
 
         // when
-        val result = connect.pullDeckToExisting("A_Deck", content)
+        val result = connect.pullDeck("A_Deck", content)
 
         // then
         assertEquals(null, result.ankiModificationsCounts)
@@ -165,7 +165,7 @@ class AnkiConnectorTest {
     }
 
     @Test
-    fun shouldPullFile() = runTest {
+    fun shouldCreateFile() = runTest {
         // given
         val notes = listOf(
             ApiNote.basic(id = 1, deckName = "A_Deck", front = "A", back = "B"),
@@ -175,7 +175,7 @@ class AnkiConnectorTest {
         fakeApi.hasNotes(*notes.toTypedArray())
 
         // when
-        val result = connect.pullFile("A_Deck")
+        val result = connect.createFile("A_Deck")
 
         // then
         assertEquals(null, result.ankiModificationsCounts)
@@ -206,9 +206,9 @@ class AnkiConnectorTest {
         fakeApi.hasNotes(*notes.toTypedArray())
 
         // when
-        val result1 = connect.pullFile("A_Deck")
+        val result1 = connect.pullDeck("A_Deck")
         val result2 = connect.pushDeck("A_Deck", result1.markdown)
-        val result3 = connect.pullDeckToExisting("A_Deck", result2.markdown)
+        val result3 = connect.pullDeck("A_Deck", result2.markdown)
 
         // then
         assertEquals(result1.markdown, result2.markdown)
@@ -233,11 +233,10 @@ class AnkiConnectorTest {
 
         // when
         val result1 = connect.pushFile(content)
-        val result2 = connect.pullFile("A_Deck")
+        val result2 = connect.createFile("A_Deck")
 
         // then
         assertEquals(result1.markdown, result2.markdown)
-        assertEquals(result2.markdown, result2.markdown)
     }
 
     @Test
@@ -258,10 +257,9 @@ class AnkiConnectorTest {
 
         // when
         val result1 = connect.pushFile(content)
-        val result2 = connect.pullDeckToExistingFile("A_Deck", content)
+        val result2 = connect.pullDeck("A_Deck", content)
 
         // then
         assertEquals(result1.markdown, result2.markdown)
-        assertEquals(result2.markdown, result2.markdown)
     }
 }

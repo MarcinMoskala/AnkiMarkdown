@@ -48,22 +48,6 @@ class AnkiConnector(
         )
     }
 
-    suspend fun pullFile(deckName: String): AnkiConnectorResult {
-        val markdown = api.getNotesInDeck(deckName)
-            .map(parser::apiNoteToNote)
-            .let(parser::writeNotes)
-        val header = headerService.headerToText(HeaderConfig(deckName = deckName))
-        return AnkiConnectorResult(
-            markdown = header + markdown
-        )
-    }
-
-    suspend fun pullDeckToExistingFile(fileName: String, fileContent: String): AnkiConnectorResult {
-        val (markdown, headerConfig, originalHeader) = headerService.separateHeaderFromFile(fileContent)
-        val pullDeckResult = pullDeckToExisting(headerConfig.deckName, markdown)
-        return pullDeckResult.copy(originalHeader + pullDeckResult.markdown)
-    }
-
     suspend fun pushDeck(deckName: String, markdown: String): AnkiConnectorResult {
         require(deckName.isNotBlank())
         require(markdown.isNotBlank())
@@ -74,24 +58,37 @@ class AnkiConnector(
         )
     }
 
-    suspend fun pullDeck(deckName: String): AnkiConnectorResult =
-        AnkiConnectorResult(
-            markdown = api.getNotesInDeck(deckName)
-                .map(parser::apiNoteToNote)
-                .let(parser::writeNotes)
+    suspend fun createFile(deckName: String): AnkiConnectorResult {
+        val markdown = api.getNotesInDeck(deckName)
+            .map(parser::apiNoteToNote)
+            .let(parser::writeNotes)
+        val header = headerService.headerToText(HeaderConfig(deckName = deckName))
+        return AnkiConnectorResult(
+            markdown = header + markdown
         )
+    }
 
-    suspend fun pullDeckToExisting(deckName: String, currentMarkdown: String): AnkiConnectorResult {
+    suspend fun pullFile(fileContent: String): AnkiConnectorResult {
+        val (markdown, headerConfig, originalHeader) = headerService.separateHeaderFromFile(fileContent)
+        val pullDeckResult = pullDeck(headerConfig.deckName, markdown)
+        return pullDeckResult.copy(markdown = originalHeader + pullDeckResult.markdown)
+    }
+
+    suspend fun pullDeck(deckName: String, currentMarkdown: String? = null): AnkiConnectorResult {
         val currentAnkiNotes: List<Note> = api.getNotesInDeck(deckName)
             .map(parser::apiNoteToNote)
-        val currentAnkiNotesByIds: Map<Long?, Note> = currentAnkiNotes.associateBy { it.id }
-        val currentFileNotes: List<Note> = parser.parseNotes(currentMarkdown)
-        val currentFileNotesIds = currentFileNotes.map { it.id }.toSet()
-        val updatedFileNotes = currentFileNotes.mapNotNull { if (it is Note.Text || it.id == null) it else currentAnkiNotesByIds[it.id] }
-        val newFileNotes = currentAnkiNotes.filter { it.id !in currentFileNotesIds }
-        val allFileNotes = updatedFileNotes + newFileNotes
+        val newNotes = if (currentMarkdown == null) {
+            currentAnkiNotes
+        } else {
+            val currentAnkiNotesByIds: Map<Long?, Note> = currentAnkiNotes.associateBy { it.id }
+            val currentFileNotes: List<Note> = parser.parseNotes(currentMarkdown)
+            val currentFileNotesIds = currentFileNotes.map { it.id }.toSet()
+            val updatedFileNotes = currentFileNotes.mapNotNull { if (it is Note.Text || it.id == null) it else currentAnkiNotesByIds[it.id] }
+            val newFileNotes = currentAnkiNotes.filter { it.id !in currentFileNotesIds }
+            updatedFileNotes + newFileNotes
+        }
         return AnkiConnectorResult(
-            markdown = parser.writeNotes(allFileNotes),
+            markdown = parser.writeNotes(newNotes),
         )
     }
 
@@ -152,8 +149,8 @@ class AnkiConnector(
     }
 }
 
-object FileMustHaveHeader: Exception("File must have header")
-object HeaderMustSpecifyName: Exception("Header must specify name")
+object FileMustHaveHeader : Exception("File must have header")
+object HeaderMustSpecifyName : Exception("Header must specify name")
 
 @JsExport
 @Serializable

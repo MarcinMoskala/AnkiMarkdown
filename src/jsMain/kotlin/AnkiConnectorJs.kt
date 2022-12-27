@@ -39,19 +39,15 @@ class AnkiConnectorJs {
         connector.pushFile(fileContent)
     }
 
-    fun pullDeckToExisting(deckName: String, currentMarkdown: String): Promise<AnkiConnectorResult> = scope.promise {
-        connector.pullDeckToExisting(deckName, currentMarkdown)
+    fun createFile(deckName: String): Promise<AnkiConnectorResult> = scope.promise {
+        connector.createFile(deckName)
     }
 
-    fun pullDeckToExistingFile(fileName: String, fileContent: String): Promise<AnkiConnectorResult> = scope.promise {
-        connector.pullDeckToExistingFile(fileName, fileContent)
+    fun pullFile(fileContent: String): Promise<AnkiConnectorResult> = scope.promise {
+        connector.pullFile(fileContent)
     }
 
-    fun pullDeck(deckName: String): Promise<AnkiConnectorResult> = scope.promise {
-        connector.pullDeck(deckName)
-    }
-
-    fun pullFile(deckName: String): Promise<AnkiConnectorResult> = scope.promise {
-        connector.pullFile(deckName)
+    fun pullDeck(deckName: String, currentMarkdown: String? = null): Promise<AnkiConnectorResult> = scope.promise {
+        connector.pullDeck(deckName, currentMarkdown)
     }
 }
