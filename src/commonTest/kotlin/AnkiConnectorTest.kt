@@ -140,7 +140,7 @@ class AnkiConnectorTest {
         """.trimIndent()
 
         // when
-        val result = connect.pushFile("A_File", content)
+        val result = connect.pushFile(content)
 
         // then
         assertEquals(null, result.ankiModificationsCounts)
@@ -181,9 +181,7 @@ class AnkiConnectorTest {
         assertEquals(null, result.ankiModificationsCounts)
         val expectedMarkdown = """   
             ---
-            deckName: A_Deck
-            articleFileName: null
-            packageDestination: null
+            deckName: "A_Deck"
             ---
 
             @1
@@ -222,9 +220,7 @@ class AnkiConnectorTest {
         // given
         val content = """
             ---
-            deckName: A_Deck
-            articleFileName: null
-            packageDestination: null
+            deckName: "A_Deck"
             ---
             
             @123
@@ -236,7 +232,7 @@ class AnkiConnectorTest {
         """.trimIndent()
 
         // when
-        val result1 = connect.pushFile("A_File", content)
+        val result1 = connect.pushFile(content)
         val result2 = connect.pullFile("A_Deck")
 
         // then
@@ -261,7 +257,7 @@ class AnkiConnectorTest {
         """.trimIndent()
 
         // when
-        val result1 = connect.pushFile("A_File", content)
+        val result1 = connect.pushFile(content)
         val result2 = connect.pullDeckToExistingFile("A_Deck", content)
 
         // then

@@ -27,27 +27,31 @@ class AnkiConnectorJs {
     fun generateArticle(fileContent: String): FileResult? =
         connector.generateArticle(fileContent)
 
-    fun exportAnkiPackage(fileName: String, fileContent: String): Promise<Boolean> = scope.promise {
-        connector.exportAnkiPackage(fileName, fileContent)
-    }
-
-    fun pushFile(fileName: String, fileContent: String): Promise<AnkiConnectorResult> = scope.promise {
-        connector.pushFile(fileName, fileContent)
-    }
-
-    fun pullDeckToExistingFile(fileName: String, fileContent: String): Promise<AnkiConnectorResult> = scope.promise {
-        connector.pullDeckToExistingFile(fileName, fileContent)
+    fun exportAnkiPackage(fileContent: String): Promise<Boolean> = scope.promise {
+        connector.exportAnkiPackage(fileContent)
     }
 
     fun pushDeck(deckName: String, markdown: String): Promise<AnkiConnectorResult> = scope.promise {
         connector.pushDeck(deckName, markdown)
     }
 
+    fun pushFile(fileContent: String): Promise<AnkiConnectorResult> = scope.promise {
+        connector.pushFile(fileContent)
+    }
+
     fun pullDeckToExisting(deckName: String, currentMarkdown: String): Promise<AnkiConnectorResult> = scope.promise {
         connector.pullDeckToExisting(deckName, currentMarkdown)
     }
 
+    fun pullDeckToExistingFile(fileName: String, fileContent: String): Promise<AnkiConnectorResult> = scope.promise {
+        connector.pullDeckToExistingFile(fileName, fileContent)
+    }
+
     fun pullDeck(deckName: String): Promise<AnkiConnectorResult> = scope.promise {
         connector.pullDeck(deckName)
+    }
+
+    fun pullFile(deckName: String): Promise<AnkiConnectorResult> = scope.promise {
+        connector.pullFile(deckName)
     }
 }

@@ -12,7 +12,7 @@ class ParseListDeletionTests {
     private val parser = DeckParser(processors = listOf(ListDeletionParser))
 
     @Test
-    fun `Simple List is parsed correctly, second line is treated as a geretal comment`() {
+    fun `Simple List is parsed correctly, second line is treated as a general comment`() {
         val text = """
 L: First 3 letters
 * a

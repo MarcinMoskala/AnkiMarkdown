@@ -1,25 +1,26 @@
 package deckmarkdown
 
-import deckmarkdown.note.DeckParser
-import deckmarkdown.note.DefaultParser
 import deckmarkdown.api.AnkiApi
 import deckmarkdown.api.ApiNote
 import deckmarkdown.api.RepositoryApi
+import deckmarkdown.note.DeckParser
+import deckmarkdown.note.DefaultParser
 import kotlinx.serialization.Serializable
-import net.mamoe.yamlkt.Yaml
 import kotlin.js.JsExport
 
 class AnkiConnector(
     private val api: RepositoryApi = AnkiApi(),
-    private val parser: DeckParser = DefaultParser
+    private val parser: DeckParser = DefaultParser,
 ) {
+    private val headerService = HeaderService()
+
     suspend fun checkConnection(): Boolean = api.connected()
 
     suspend fun getDeckNames(): List<String> = api.getDecks()
 
     fun generateArticle(fileContent: String): FileResult? {
-        val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
-        val articleFileName = headerConfig?.articleFileName ?: return null
+        val (markdown, headerConfig) = headerService.separateHeaderFromFile(fileContent)
+        val articleFileName = headerConfig.articleFileName ?: return null
         return FileResult(
             name = articleFileName,
             content = markdown
@@ -32,18 +33,16 @@ class AnkiConnector(
     Used to generate Anki package in `.apkg` format based on the previously pushed notes.
     To generate a package with the current notes, use `pushFile` first.
      */
-    suspend fun exportAnkiPackage(fileName: String, fileContent: String): Boolean {
-        val (markdown, headerConfig) = separateHeaderFromFile(fileContent)
-        val packageDestination = headerConfig?.packageDestination ?: return false
-        val deckName = chooseDeckName(headerConfig, fileName)
-        api.exportPackage(deckName, packageDestination, false)
+    suspend fun exportAnkiPackage(fileContent: String): Boolean {
+        val (_, headerConfig) = headerService.separateHeaderFromFile(fileContent)
+        val packageDestination = headerConfig.packageDestination ?: return false
+        api.exportPackage(headerConfig.deckName, packageDestination, false)
         return true
     }
 
-    suspend fun pushFile(fileName: String, fileContent: String): AnkiConnectorResult {
-        val (markdown, headerConfig, originalHeader) = separateHeaderFromFile(fileContent)
-        val deckName = chooseDeckName(headerConfig, fileName)
-        val result = pushDeck(deckName, markdown)
+    suspend fun pushFile(fileContent: String): AnkiConnectorResult {
+        val (markdown, headerConfig, originalHeader) = headerService.separateHeaderFromFile(fileContent)
+        val result = pushDeck(headerConfig.deckName, markdown)
         return AnkiConnectorResult(
             markdown = originalHeader + result.markdown
         )
@@ -53,16 +52,15 @@ class AnkiConnector(
         val markdown = api.getNotesInDeck(deckName)
             .map(parser::apiNoteToNote)
             .let(parser::writeNotes)
-        val header = headerToText(HeaderConfig(deckName = deckName))
+        val header = headerService.headerToText(HeaderConfig(deckName = deckName))
         return AnkiConnectorResult(
             markdown = header + markdown
         )
     }
 
     suspend fun pullDeckToExistingFile(fileName: String, fileContent: String): AnkiConnectorResult {
-        val (markdown, headerConfig, originalHeader) = separateHeaderFromFile(fileContent)
-        val deckName = chooseDeckName(headerConfig, fileName)
-        val pullDeckResult = pullDeckToExisting(deckName, markdown)
+        val (markdown, headerConfig, originalHeader) = headerService.separateHeaderFromFile(fileContent)
+        val pullDeckResult = pullDeckToExisting(headerConfig.deckName, markdown)
         return pullDeckResult.copy(originalHeader + pullDeckResult.markdown)
     }
 
@@ -152,39 +150,15 @@ class AnkiConnector(
             )
         )
     }
-
-    data class HeaderSeparationResult(
-        val markdown: String,
-        val headerConfig: HeaderConfig?,
-        val originalHeader: String?,
-    )
-
-    private fun separateHeaderFromFile(fileContent: String): HeaderSeparationResult {
-        val matchResult = Regex("""^(---([\w\W]*)\n---[\n]+)([\w\W]*)""")
-            .find(fileContent.trim())
-            ?: return HeaderSeparationResult(fileContent, null, null)
-        val markdown = matchResult.groupValues[3]
-        val originalHeader = matchResult.groupValues[1]
-        val headerContent = matchResult.groupValues[2]
-        val headerConfig = Yaml.decodeFromString(HeaderConfig.serializer(), headerContent)
-        return HeaderSeparationResult(markdown, headerConfig, originalHeader)
-    }
-
-    private fun headerToText(headerConfig: HeaderConfig): String =
-        Yaml.encodeToString(HeaderConfig.serializer(), headerConfig)
-            .let { "---\n$it\n---\n\n" }
-
-    private fun chooseDeckName(headerConfig: HeaderConfig?, fileName: String) =
-        headerConfig?.deckName
-            ?: fileName
-                .replace("__", "::")
-                .substringBefore(".")
 }
+
+object FileMustHaveHeader: Exception("File must have header")
+object HeaderMustSpecifyName: Exception("Header must specify name")
 
 @JsExport
 @Serializable
 class HeaderConfig(
-    val deckName: String? = null,
+    val deckName: String,
     val articleFileName: String? = null,
     val packageDestination: String? = null,
 //    val generalComment: String? = null,
