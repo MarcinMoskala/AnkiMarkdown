@@ -285,17 +285,17 @@ class AnkiConnectorTest {
 
             @1676064120018
             q: What do we call processes that are each executed by different thread, on different CPU cores?
-            a: **Pralalell** (more precisely) or **concurrent**.
+            a: **Paralalell** (more precisely) or **concurrent**.
         """.trimIndent()
 
         // when
-        connect.pushFile(noteContent)
+        val res = connect.pushFile(noteContent)
 
         // then
         val expected = listOf(
             ApiNote(noteId=1676064119969, deckName="A_Deck", modelName="Basic", fields= mapOf(
-                "Front" to "What is the difference between <b>concurrent<i>* and *</i>paralell</b> process?",
-                "Back" to "Concurrent <b>might<i>* mean that there is only one thread that executes multiple processes interchangably. Paralell *</i>must</b> be using multiple threads and CPU cores, to effectively execute two tasks at the same time. <br>\n<img src=\"Pasted image 20230119100105.png\" /><br>\n<img src=\"Pasted image 20230119100201.png\" />",
+                "Front" to "What is the difference between <b>concurrent</b> and <b>paralell</b> process?",
+                "Back" to "Concurrent <b>might</b> mean that there is only one thread that executes multiple processes interchangably. Paralell <b>must</b> be using multiple threads and CPU cores, to effectively execute two tasks at the same time. <br>\n<img src=\"Pasted image 20230119100105.png\" /><br>\n<img src=\"Pasted image 20230119100201.png\" />",
                 "Extra" to ""
             )),
             ApiNote(noteId=1676064119993, deckName="A_Deck", modelName="Basic", fields=mapOf(
@@ -305,10 +305,12 @@ class AnkiConnectorTest {
             )),
             ApiNote(noteId=1676064120018, deckName="A_Deck", modelName="Basic", fields=mapOf(
                 "Front" to "What do we call processes that are each executed by different thread, on different CPU cores?",
-                "Back" to "<b>Pralalell<i>* (more precisely) or *</i>concurrent</b>.",
+                "Back" to "<b>Paralalell</b> (more precisely) or <b>concurrent</b>.",
                 "Extra" to ""
             ))
         )
         assertEquals(expected, fakeApi.notes)
+
+        assertEquals(noteContent, res.markdown)
     }
 }
