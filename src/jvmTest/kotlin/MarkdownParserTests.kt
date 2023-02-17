@@ -36,7 +36,7 @@ class MarkdownParserTests {
 
     @Test
     fun `Image is parsed from regex`() {
-        val text = parser.markdownToAnki("this is ![](an image_.img) hello")
+        val text = parser.markdownToAnki("this is ![[an image_.img]] hello")
         assertEquals("this is <img src=\"an image_.img\" /> hello", text)
     }
 

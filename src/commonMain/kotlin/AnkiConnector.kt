@@ -6,6 +6,7 @@ import deckmarkdown.api.RepositoryApi
 import deckmarkdown.note.DeckParser
 import deckmarkdown.note.DefaultParser
 import kotlinx.serialization.Serializable
+import note.MarkdownParser
 import kotlin.js.JsExport
 
 class AnkiConnector(
@@ -43,14 +44,14 @@ class AnkiConnector(
     suspend fun pushFile(fileContent: String): AnkiConnectorResult {
         val (markdown, headerConfig, originalHeader) = headerService.separateHeaderFromFile(fileContent)
         val result = pushDeck(headerConfig.deckName, markdown)
-        return AnkiConnectorResult(
+        return result.copy(
             markdown = originalHeader + result.markdown
         )
     }
 
     suspend fun pushDeck(deckName: String, markdown: String): AnkiConnectorResult {
-        require(deckName.isNotBlank())
-        require(markdown.isNotBlank())
+        require(deckName.isNotBlank()) { "Deck name must not be blank" }
+        require(markdown.isNotBlank()) { "File content must not be blank" }
         return storeOrUpdateNoteText(
             deckName = deckName,
             noteContent = markdown,
@@ -59,12 +60,14 @@ class AnkiConnector(
     }
 
     suspend fun createFile(deckName: String): AnkiConnectorResult {
-        val markdown = api.getNotesInDeck(deckName)
+        val noteContent = api.getNotesInDeck(deckName)
             .map(parser::apiNoteToNote)
             .let(parser::writeNotes)
         val header = headerService.headerToText(HeaderConfig(deckName = deckName))
+        val mediaToUpdate = MarkdownParser.findImagesInMarkdown(noteContent)
         return AnkiConnectorResult(
-            markdown = header + markdown
+            markdown = header + noteContent,
+            mediaToUpdate = mediaToUpdate.toTypedArray()
         )
     }
 
@@ -87,8 +90,12 @@ class AnkiConnector(
             val newFileNotes = currentAnkiNotes.filter { it.id !in currentFileNotesIds }
             updatedFileNotes + newFileNotes
         }
+
+        val noteContent = parser.writeNotes(newNotes)
+        val mediaToUpdate = MarkdownParser.findImagesInMarkdown(noteContent)
         return AnkiConnectorResult(
-            markdown = parser.writeNotes(newNotes),
+            markdown = noteContent,
+            mediaToUpdate = mediaToUpdate.toTypedArray()
         )
     }
 
@@ -136,7 +143,8 @@ class AnkiConnector(
             return parser.apiNoteToNote(newApiNote)
         })
 
-        println("In deck $deckName added $addedCount, updated $updatedCount, removed $removedCount, letf unchanged: $leftUnchanged")
+        val mediaToUpdate = MarkdownParser.findImagesInMarkdown(noteContent)
+
         return AnkiConnectorResult(
             markdown = parser.writeNotes(newCards),
             ankiModificationsCounts = AnkiConnectorResult.ModificationsCounts(
@@ -144,9 +152,17 @@ class AnkiConnector(
                 updatedCount = updatedCount,
                 removedCount = removedCount,
                 unchangedCount = leftUnchanged,
-            )
+            ),
+            mediaToUpdate = mediaToUpdate.toTypedArray()
         )
     }
+
+    suspend fun storeMediaFile(fileName: String, fileContentBase64: String) {
+        api.storeMediaFile(fileName, fileContentBase64)
+    }
+
+    suspend fun retrieveMediaFile(fileName: String): String =
+        api.retrieveMediaFile(fileName)
 }
 
 object FileMustHaveHeader : Exception("File must have header")
@@ -162,10 +178,12 @@ class HeaderConfig(
 //    val resourcesFile:String? = null
 )
 
+@Suppress("ArrayInDataClass")
 @JsExport
 data class AnkiConnectorResult(
     val markdown: String,
-    val ankiModificationsCounts: ModificationsCounts? = null
+    val ankiModificationsCounts: ModificationsCounts? = null,
+    val mediaToUpdate: Array<String> = arrayOf(),
 ) {
     class ModificationsCounts(
         val addedCount: Int = 0,

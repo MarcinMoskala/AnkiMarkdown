@@ -24,12 +24,19 @@ interface RepositoryApi {
     suspend fun getModelsNames(): List<String>
     suspend fun addModel(model: ApiNoteModel)
     suspend fun exportPackage(deckName: String, packageDestination: String, includeScheduled: Boolean)
-//    suspend fun storeMediaFile(file: File)
+    suspend fun storeMediaFile(fileName: String, fileContentBase64: String): Boolean
+    suspend fun retrieveMediaFile(fileName: String): String
 }
 
 @Serializable
 data class ResultWithListOfString(
     val result: List<String>?,
+    val error: String? = null
+)
+
+@Serializable
+data class ResultWithString(
+    val result: String?,
     val error: String? = null
 )
 
@@ -183,6 +190,14 @@ class AnkiApi : RepositoryApi {
         call("exportPackage", """{"deck": "$deckName", "path": "$packageDestination", "includeSched": $includeScheduled}""")
     }
 
+    override suspend fun storeMediaFile(fileName: String, fileContentBase64: String) =
+        request<ResultWithString>("storeMediaFile", """{ "filename": "$fileName", "data": "$fileContentBase64" }}""")
+            .result == "false"
+
+    override suspend fun retrieveMediaFile(fileName: String): String =
+        request<ResultWithString>("retrieveMediaFile", """{ "filename": "$fileName" }}""")
+            .result.orEmpty()
+
     private suspend fun call(action: String, params: String) {
         val resText = client.post(url) {
             setBody("""{"action": "$action", "version": 6, "params": $params}""")
@@ -199,17 +214,6 @@ class AnkiApi : RepositoryApi {
         println(resText)
         return json.decodeFromString(resText)
     }
-// TODO
-//    override suspend fun storeMediaFile(file: File) {
-//        val filename = file.name
-//        val text = client.post<String>(url) {
-//            val bodyText =
-//                """{"action": "storeMediaFile", "version": 6, "params": { "filename": "$filename", "data": "${file.readInBase64()}" }}"""
-//            body = bodyText
-//        }
-//        val res = text.readObjectOrNull<ResultWrapper<Any?>>()
-//        if (res?.error != null) throw Error("${res.error}")
-//    }
 }
 
 //fun File.readInBase64(): String {

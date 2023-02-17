@@ -50,4 +50,12 @@ class AnkiConnectorJs {
     fun pullDeck(deckName: String, currentMarkdown: String? = null): Promise<AnkiConnectorResult> = scope.promise {
         connector.pullDeck(deckName, currentMarkdown)
     }
+
+    fun storeMediaFile(fileName: String, fileContentBase64: String): Promise<Boolean> = scope.promise {
+        connector.storeMediaFile(fileName, fileContentBase64)
+    }
+
+    fun retrieveMediaFile(fileName: String): Promise<String> = scope.promise {
+        connector.retrieveMediaFile(fileName)
+    }
 }

@@ -74,7 +74,11 @@ class FakeAnkiApi : RepositoryApi {
         TODO("Not yet implemented")
     }
 
-//    override suspend fun storeMediaFile(file: File) {
-//        TODO()
-//    }
+    override suspend fun storeMediaFile(fileName: String, fileContentBase64: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun retrieveMediaFile(fileName: String): String {
+        TODO("Not yet implemented")
+    }
 }
