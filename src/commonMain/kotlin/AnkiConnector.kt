@@ -157,9 +157,8 @@ class AnkiConnector(
         )
     }
 
-    suspend fun storeMediaFile(fileName: String, fileContentBase64: String) {
+    suspend fun storeMediaFile(fileName: String, fileContentBase64: String): Boolean =
         api.storeMediaFile(fileName, fileContentBase64)
-    }
 
     suspend fun retrieveMediaFile(fileName: String): String =
         api.retrieveMediaFile(fileName)

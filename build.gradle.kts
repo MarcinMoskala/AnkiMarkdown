@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.marcinmoskala"
-val libVersion =  "0.0.20"
+val libVersion =  "0.0.21"
 version = libVersion
 
 repositories {
