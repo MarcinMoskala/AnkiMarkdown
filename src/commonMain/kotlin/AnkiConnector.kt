@@ -111,7 +111,7 @@ class AnkiConnector(
             error("This function requires opened Anki with installed Anki Connect plugin. Details in ReadMe.md")
         }
 
-        val currentCards = api.getNotesInDeck(deckName)
+        val currentCards: List<ApiNote> = api.getNotesInDeck(deckName)
         val currentIds = currentCards.map { it.noteId }
 
         val removedCardIds = currentIds - notes.mapNotNull { it.id }.toSet()
@@ -127,9 +127,8 @@ class AnkiConnector(
             if (note is Note.Text) return note
             val apiNote: ApiNote = parser.noteToApiNote(note, deckName, comment)
             val newApiNote = if (apiNote.hasId && apiNote.noteId in currentIds) {
-                val current: Note? = currentCards.find { it.noteId == apiNote.noteId }
-                    ?.let { parser.apiNoteToNote(it) }
-                if (note == current) {
+                val currentApiNote = currentCards.find { it.noteId == apiNote.noteId }
+                if (apiNote == currentApiNote) {
                     leftUnchanged++
                     apiNote
                 } else {

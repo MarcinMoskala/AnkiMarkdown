@@ -66,7 +66,7 @@ data class Text(val text: String) : ApiNoteOrText()
 
 @Serializable
 data class ApiNote(
-    val noteId: Long = NO_ID, // For creation, API do not care
+    val noteId: Long = NO_ID, // For creation only, API do not care
     val deckName: String,
     val modelName: String,
     val fields: Map<String, String>,
