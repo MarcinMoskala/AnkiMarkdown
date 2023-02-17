@@ -61,6 +61,9 @@ data class ResultWithNoteReceiveDataApiList(
 @Serializable
 data class ResultWrapper<T>(val result: T? = null, val error: String? = null)
 
+@Serializable
+class FileNameAndData(val filename: String, val data: String)
+
 sealed class ApiNoteOrText
 data class Text(val text: String) : ApiNoteOrText()
 
@@ -190,9 +193,11 @@ class AnkiApi : RepositoryApi {
         call("exportPackage", """{"deck": "$deckName", "path": "$packageDestination", "includeSched": $includeScheduled}""")
     }
 
-    override suspend fun storeMediaFile(fileName: String, fileContentBase64: String) =
-        request<ResultWithString>("storeMediaFile", """{ "filename": "$fileName", "data": "$fileContentBase64" }}""")
+    override suspend fun storeMediaFile(fileName: String, fileContentBase64: String): Boolean {
+        val data = FileNameAndData(fileName, fileContentBase64)
+        return request<ResultWithString>("storeMediaFile", json.encodeToString(data))
             .result == "false"
+    }
 
     override suspend fun retrieveMediaFile(fileName: String): String =
         request<ResultWithString>("retrieveMediaFile", """{ "filename": "$fileName" }}""")

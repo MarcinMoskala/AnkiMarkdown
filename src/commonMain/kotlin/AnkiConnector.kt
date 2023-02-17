@@ -196,9 +196,3 @@ data class FileResult(
     val name: String,
     val content: String,
 )
-
-//private fun String.dropMediaFolderPrefix(): String = this.replace("\"media/", "\"")
-//
-//private fun String.addMediaFolderPrefix(): String = this.replace("<img src=\"([\\w.]*)\"".toRegex()) {
-//    "<img src=\"media/${it.groupValues[1]}\""
-//}
