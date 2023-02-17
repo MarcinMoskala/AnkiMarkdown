@@ -184,7 +184,7 @@ data class AnkiConnectorResult(
     val ankiModificationsCounts: ModificationsCounts? = null,
     val mediaToUpdate: Array<String> = arrayOf(),
 ) {
-    class ModificationsCounts(
+    data class ModificationsCounts(
         val addedCount: Int = 0,
         val updatedCount: Int = 0,
         val removedCount: Int = 0,

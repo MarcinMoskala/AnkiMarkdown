@@ -5,7 +5,7 @@ object MarkdownParser {
     val boldHtmlRegex = Regex("<b>([\\w\\W]*)</b>")
     val italianicMdRegex = Regex("\\*([\\w\\W]*)\\*")
     val italianicHtmlRegex = Regex("<i>([\\w\\W]*)</i>")
-    val imgMdRegex = Regex("!\\[\\[(.+)]]")
+    val imgMdRegex = Regex("!\\[\\[(.+)\\]\\]")
     val imgHtmlRegex = Regex("<img src=\"([\\w\\W]*)\" />")
 
     fun markdownToAnki(src: String): String = src

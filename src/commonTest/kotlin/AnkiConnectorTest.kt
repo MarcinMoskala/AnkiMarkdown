@@ -2,7 +2,10 @@ package ankimarkdown
 
 import ankimarkdown.fakes.FakeAnkiApi
 import deckmarkdown.AnkiConnector
+import deckmarkdown.AnkiConnectorResult
+import deckmarkdown.Note
 import deckmarkdown.api.ApiNote
+import deckmarkdown.note.BasicParser
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -143,7 +146,7 @@ class AnkiConnectorTest {
         val result = connect.pushFile(content)
 
         // then
-        assertEquals(null, result.ankiModificationsCounts)
+        assertEquals(AnkiConnectorResult.ModificationsCounts(addedCount = 2), result.ankiModificationsCounts)
         val expectedMarkdown = """
             ---
             deckName: "New name ---"
@@ -261,5 +264,51 @@ class AnkiConnectorTest {
 
         // then
         assertEquals(result1.markdown, result2.markdown)
+    }
+
+    @Test
+    fun shouldTransformMarkdownWhenPushingFile() = runTest {
+        val noteContent = """
+            ---
+            deckName: A_Deck
+            ---
+            
+            @1676064119969
+            q: What is the difference between **concurrent** and **paralell** process?
+            a: Concurrent **might** mean that there is only one thread that executes multiple processes interchangably. Paralell **must** be using multiple threads and CPU cores, to effectively execute two tasks at the same time. 
+            ![[Pasted image 20230119100105.png]]
+            ![[Pasted image 20230119100201.png]]
+
+            @1676064119993
+            q: What do we call processes that are each executed internchangably by a single thread?
+            a: **Concurrent**.
+
+            @1676064120018
+            q: What do we call processes that are each executed by different thread, on different CPU cores?
+            a: **Pralalell** (more precisely) or **concurrent**.
+        """.trimIndent()
+
+        // when
+        connect.pushFile(noteContent)
+
+        // then
+        val expected = listOf(
+            ApiNote(noteId=1676064119969, deckName="A_Deck", modelName="Basic", fields= mapOf(
+                "Front" to "What is the difference between <b>concurrent<i>* and *</i>paralell</b> process?",
+                "Back" to "Concurrent <b>might<i>* mean that there is only one thread that executes multiple processes interchangably. Paralell *</i>must</b> be using multiple threads and CPU cores, to effectively execute two tasks at the same time. <br>\n<img src=\"Pasted image 20230119100105.png\" /><br>\n<img src=\"Pasted image 20230119100201.png\" />",
+                "Extra" to ""
+            )),
+            ApiNote(noteId=1676064119993, deckName="A_Deck", modelName="Basic", fields=mapOf(
+                "Front" to "What do we call processes that are each executed internchangably by a single thread?",
+                "Back" to "<b>Concurrent</b>.",
+                "Extra" to ""
+            )),
+            ApiNote(noteId=1676064120018, deckName="A_Deck", modelName="Basic", fields=mapOf(
+                "Front" to "What do we call processes that are each executed by different thread, on different CPU cores?",
+                "Back" to "<b>Pralalell<i>* (more precisely) or *</i>concurrent</b>.",
+                "Extra" to ""
+            ))
+        )
+        assertEquals(expected, fakeApi.notes)
     }
 }
