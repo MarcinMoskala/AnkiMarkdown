@@ -1,17 +1,14 @@
 package deckmarkdown.api
 
-import deckmarkdown.note.brsToNewLines
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import deckmarkdown.note.removeMultipleBreaks
-import io.ktor.http.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonObject
 
@@ -68,10 +65,6 @@ data class ApiNote(
     val fields: Map<String, String>,
 ) : ApiNoteOrText() {
     val hasId get() = noteId != NO_ID
-
-    fun readTextField(field: String): String = fields.getValue(field)
-        .removeMultipleBreaks()
-        .brsToNewLines()
 
     companion object {
         const val NO_ID = -1L

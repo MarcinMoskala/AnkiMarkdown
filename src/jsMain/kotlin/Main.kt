@@ -1,5 +1,6 @@
 import deckmarkdown.note.DefaultParser
 
 fun main() {
-    println(DefaultParser.parseNotes("q: Q\na: A"))
+    println(listOf(1,2,3))
+    console.log("Hello, Kotlin/JS!")
 }

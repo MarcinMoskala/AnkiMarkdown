@@ -3,12 +3,14 @@ package deckmarkdown.note
 import deckmarkdown.Note
 import deckmarkdown.Note.*
 import deckmarkdown.api.ApiNote
+import note.MarkdownParser
 
 object ClozeParser : FullNoteProcessor<Cloze> {
     private val CLOZE_REGEX = "\\{\\{([^:]+::(.+?))\\}\\}".toRegex()
     private val STANDALONE_BRACKET_REGEX = "\\{\\{([^}{]+)\\}\\}".toRegex()
     private const val API_NOTE_NAME = "Cloze"
     const val TEXT_FIELD = "Text"
+    private val mdParser = MarkdownParser
 
     override fun handlesNote(note: Note): Boolean = note is Cloze
 
@@ -24,12 +26,15 @@ object ClozeParser : FullNoteProcessor<Cloze> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = API_NOTE_NAME,
-        fields = mapOf(TEXT_FIELD to note.text.newLinesToBrs(), "Extra" to comment.newLinesToBrs())
+        fields = mapOf(
+            TEXT_FIELD to note.text.let(mdParser::markdownToAnki),
+            "Extra" to comment.let(mdParser::markdownToAnki)
+        )
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): Cloze = Cloze(
         apiNote.noteId,
-        apiNote.readTextField(TEXT_FIELD)
+        apiNote.fields.getValue(TEXT_FIELD).let(mdParser::ankiToMarkdown)
     )
 
     override fun toHtml(note: Cloze): String = note.text

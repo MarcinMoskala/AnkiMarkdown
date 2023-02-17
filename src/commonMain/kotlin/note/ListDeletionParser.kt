@@ -4,10 +4,12 @@ import deckmarkdown.Note
 import deckmarkdown.Note.ListDeletion
 import deckmarkdown.Note.ListDeletion.ListType
 import deckmarkdown.api.ApiNote
+import note.MarkdownParser
 
 object ListDeletionParser : FullNoteProcessor<ListDeletion> {
     private val LIST_QUESTION_REGEX = "^([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()
     private val LIST_ITEM_REGEX = "\\*\\s*([^\\n]*)(\\n([^*]*))?".toRegex()
+    private val mdParser = MarkdownParser
 
     private val API_NOTE_TO_TYPE = mapOf(
         "ListDeletion" to ListType.List,
@@ -24,7 +26,7 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
         val question = parsedStart.groupValues[2].trim().trimEnd()
         val generalComment = parsedStart.groupValues[3].trim().trimEnd()
 
-        val listType = when (prefix.toLowerCase()) {
+        val listType = when (prefix.lowercase()) {
             "s" -> ListType.Set
             else -> ListType.List
         }
@@ -53,34 +55,43 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = API_NOTE_TO_TYPE.reverseLookup(note.type),
-        fields = mapOf("Title" to note.title, "General Comment" to note.generalComment, "Extra" to comment) +
-                note.items
-                    .withIndex()
-                    .flatMap { (index, item) ->
-                        val positionStr = "${index + 1}"
-                        listOfNotNull(positionStr to item.value, "$positionStr comment" to item.comment)
-                    }
-                    .toMap()
+        fields = mapOf(
+            "Title" to note.title.let(mdParser::markdownToAnki),
+            "General Comment" to note.generalComment.let(mdParser::markdownToAnki),
+            "Extra" to comment.let(mdParser::markdownToAnki)
+        ) + note.items
+            .withIndex()
+            .flatMap { (index, item) ->
+                val positionStr = "${index + 1}"
+                listOf(
+                    positionStr to item.value.let(mdParser::markdownToAnki),
+                    "$positionStr comment" to item.comment.let(mdParser::markdownToAnki)
+                )
+            }
+            .toMap()
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): ListDeletion = ListDeletion(
         apiNote.noteId,
         API_NOTE_TO_TYPE[apiNote.modelName] ?: error("Unsupported model name " + apiNote.modelName),
-        apiNote.fields.getValue("Title").removeMultipleBreaks(),
-        apiNote.makeItemsList(),
-        apiNote.fields.getValue("General Comment")
+        apiNote.fields.getValue("Title").let(mdParser::ankiToMarkdown),
+        (1..20).mapNotNull { i ->
+            val value = apiNote.fields["$i"].takeUnless<String?> { it.isNullOrBlank() } ?: return@mapNotNull null
+            val comment = apiNote.fields["${i} comment"].orEmpty()
+            ListDeletion.Item(
+                value.let(mdParser::ankiToMarkdown),
+                comment.let(mdParser::ankiToMarkdown)
+            )
+        },
+        apiNote.fields.getValue("General Comment").let(mdParser::ankiToMarkdown)
     )
 
     override fun toHtml(note: ListDeletion): String = "TODO"
 
     override fun toMarkdown(note: ListDeletion): String = "TODO"
+
 }
 
 private fun <K, V> Map<K, V>.reverseLookup(value: V) =
     toList().first { it.second == value }.first
 
-private fun ApiNote.makeItemsList(): List<ListDeletion.Item> = (1..20).mapNotNull { i ->
-    val value = fields["$i"].takeUnless { it.isNullOrBlank() } ?: return@mapNotNull null
-    val comment = fields["${i} comment"].orEmpty()
-    ListDeletion.Item(value, comment)
-}

@@ -3,10 +3,12 @@ package deckmarkdown.note
 import deckmarkdown.Note
 import deckmarkdown.Note.*
 import deckmarkdown.api.ApiNote
+import note.MarkdownParser
 
 object ReminderParser : FullNoteProcessor<Reminder> {
     private val PATTERN = "[Rr](eminder)?:([\\s\\S]+)".toRegex()
     private const val API_NOTE_NAME = "Reminder"
+    private val mdParser = MarkdownParser
 
     override fun handlesNote(note: Note): Boolean = note is Reminder
 
@@ -23,12 +25,15 @@ object ReminderParser : FullNoteProcessor<Reminder> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = "Reminder",
-        fields = mapOf("Front" to note.text, "Extra" to comment)
+        fields = mapOf(
+            "Front" to note.text.let(mdParser::markdownToAnki),
+            "Extra" to comment.let(mdParser::markdownToAnki)
+        )
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): Reminder = Reminder(
         apiNote.noteId,
-        apiNote.fields.getValue("Front").removeMultipleBreaks()
+        apiNote.fields.getValue("Front").let(mdParser::ankiToMarkdown)
     )
 
     override fun toHtml(note: Reminder): String = note.text

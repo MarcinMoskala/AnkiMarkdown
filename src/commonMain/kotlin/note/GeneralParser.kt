@@ -3,6 +3,7 @@ package deckmarkdown.note
 import deckmarkdown.api.ApiNote
 import deckmarkdown.Note
 import deckmarkdown.Note.General
+import note.MarkdownParser
 
 // TODO
 /*
@@ -10,6 +11,7 @@ import deckmarkdown.Note.General
  * notes but before TextParser.
  */
 object GeneralParser : FullNoteProcessor<General> {
+    private val mdParser = MarkdownParser
 
     override fun handlesNote(note: Note): Boolean = note is General
 
