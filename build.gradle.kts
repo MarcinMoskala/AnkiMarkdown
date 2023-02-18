@@ -62,7 +62,10 @@ kotlin {
 }
 
 val properties = Properties().apply {
-    load(rootProject.file("local.properties").reader())
+    rootProject.file("local.properties")
+        .takeIf { it.exists() }
+        ?.reader()
+        ?.let { load(it) }
 }
 
 npmPublish {
@@ -75,7 +78,7 @@ npmPublish {
     registries {
         register("npmjs") {
             uri.set(uri("https://registry.npmjs.org")) //
-            authToken.set(properties["npmSecret"] as String)
+            authToken.set((properties["npmSecret"] as? String).orEmpty())
         }
     }
 }
