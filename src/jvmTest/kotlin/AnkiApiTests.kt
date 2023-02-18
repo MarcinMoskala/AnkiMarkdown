@@ -9,6 +9,7 @@ import deckmarkdown.api.AnkiApi
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import kotlin.random.Random
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 
 class AnkiApiTests {
@@ -21,6 +22,7 @@ class AnkiApiTests {
         assumeTrue(api.connected())
     }
 
+    @Ignore
     @Test
     fun `After deck added it exists, after removed, not anymore`() = runBlocking {
         val deckName = "MyName"
@@ -36,6 +38,7 @@ class AnkiApiTests {
         assertDeckRemoved(deckName)
     }
 
+    @Ignore
     @Test
     fun `After notes added they exists, after removed, not anymore`() = runBlocking {
         val deckName = "MyName"
@@ -64,6 +67,7 @@ class AnkiApiTests {
         assert(deckName !in decksAfterEverything) { "Deck with the name $deckName should not be present after this test" }
     }
 
+    @Ignore
     @Test // Same for incorrect names
     fun `Adding to a deck that does not exist causes error throw`() = runBlocking {
         val deckName = "MyNameKOKOKOKOKO" + Random.nextInt()

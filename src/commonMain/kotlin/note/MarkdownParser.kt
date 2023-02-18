@@ -1,12 +1,12 @@
 package note
 
 object MarkdownParser {
-    val boldMdRegex = Regex("\\*\\*([\\w\\W]*?)\\*\\*")
-    val boldHtmlRegex = Regex("<b>([\\w\\W]*?)</b>")
-    val italianicMdRegex = Regex("\\*([\\w\\W]*?)\\*")
-    val italianicHtmlRegex = Regex("<i>([\\w\\W]*?)</i>")
-    val imgMdRegex = Regex("!\\[\\[(.+?)\\]\\]")
-    val imgHtmlRegex = Regex("<img src=\"([\\w\\W]*?)\" />")
+    private val boldMdRegex = Regex("\\*\\*([\\w\\W]*?)\\*\\*")
+    private val boldHtmlRegex = Regex("<b>([\\w\\W]*?)</b>")
+    private val italianicMdRegex = Regex("\\*([\\w\\W]*?)\\*")
+    private val italianicHtmlRegex = Regex("<i>([\\w\\W]*?)</i>")
+    private val imgMdRegex = Regex("!\\[\\[(.+?)\\]\\]")
+    private val imgHtmlRegex = Regex("<img src=\"([\\w\\W]*?)\" />")
 
     fun markdownToAnki(src: String): String = src
         .replace(boldMdRegex, "<b>$1</b>")
