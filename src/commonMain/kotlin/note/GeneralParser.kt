@@ -11,8 +11,6 @@ import note.MarkdownParser
  * notes but before TextParser.
  */
 object GeneralParser : FullNoteProcessor<General> {
-    private val mdParser = MarkdownParser
-
     override fun handlesNote(note: Note): Boolean = note is General
 
     override fun recognize(text: String): Boolean = TODO()

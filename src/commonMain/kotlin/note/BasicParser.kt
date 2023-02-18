@@ -9,7 +9,6 @@ import note.MarkdownParser
 object BasicParser : FullNoteProcessor<Basic> {
     private val PATTERN = "[Qq]:([\\s\\S]+)\\n[Aa]:([\\s\\S]+)".toRegex()
     private const val API_NOTE_NAME = "Basic"
-    private val mdParser = MarkdownParser
     val FRONT_FIELD = "Front"
     val BACK_FIELD = "Back"
 
@@ -21,8 +20,8 @@ object BasicParser : FullNoteProcessor<Basic> {
         val (question, answer) = parseQA(noteText, PATTERN)
         return Basic(
             id = id,
-            front = question.let(mdParser::ankiToMarkdown),
-            back = answer.let(mdParser::ankiToMarkdown)
+            front = question,
+            back = answer
         )
     }
 
@@ -38,17 +37,17 @@ object BasicParser : FullNoteProcessor<Basic> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = API_NOTE_NAME,
-        fields = mapOf(
-            FRONT_FIELD to note.front.let(mdParser::markdownToAnki),
-            BACK_FIELD to note.back.let(mdParser::markdownToAnki),
-            "Extra" to comment.let(mdParser::markdownToAnki)
+        fields = ApiNote.fieldsOf(
+            FRONT_FIELD to note.front,
+            BACK_FIELD to note.back,
+            "Extra" to comment
         )
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): Basic = Basic(
         apiNote.noteId,
-        apiNote.fields.getValue(FRONT_FIELD).let(mdParser::ankiToMarkdown),
-        apiNote.fields.getValue(BACK_FIELD).let(mdParser::ankiToMarkdown)
+        apiNote.field(FRONT_FIELD),
+        apiNote.field(BACK_FIELD)
     )
 
     override fun toHtml(note: Basic): String = "<i>Q:</i> {front}<br><i>A:</i> {back}"
@@ -63,7 +62,6 @@ object BasicParser : FullNoteProcessor<Basic> {
 object BasicAndReversedParser : FullNoteProcessor<BasicAndReverse> {
     private val PATTERN = "[Qq][Aa]:([\\s\\S]+)\\n[Aa][Qq]:([\\s\\S]+)".toRegex()
     private const val API_NOTE_NAME = "Basic (and reversed card)"
-    private val mdParser = MarkdownParser
 
     override fun handlesNote(note: Note): Boolean = note is BasicAndReverse
 
@@ -73,8 +71,8 @@ object BasicAndReversedParser : FullNoteProcessor<BasicAndReverse> {
         val (question, answer) = parseQA(noteText, PATTERN)
         return BasicAndReverse(
             id = id,
-            front = question.let(mdParser::ankiToMarkdown),
-            back = answer.let(mdParser::ankiToMarkdown)
+            front = question,
+            back = answer
         )
     }
 
@@ -90,17 +88,17 @@ object BasicAndReversedParser : FullNoteProcessor<BasicAndReverse> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = API_NOTE_NAME,
-        fields = mapOf(
-            "Front" to note.front.let(mdParser::markdownToAnki),
-            "Back" to note.back.let(mdParser::markdownToAnki),
-            "Extra" to comment.let(mdParser::markdownToAnki)
+        fields = ApiNote.fieldsOf(
+            "Front" to note.front,
+            "Back" to note.back,
+            "Extra" to comment
         )
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): BasicAndReverse = BasicAndReverse(
         apiNote.noteId,
-        apiNote.fields.getValue("Front").let(mdParser::ankiToMarkdown),
-        apiNote.fields.getValue("Back").let(mdParser::ankiToMarkdown)
+        apiNote.field("Front"),
+        apiNote.field("Back")
     )
 
     override fun toHtml(note: BasicAndReverse): String = "<i>Q/A:</i> {front}<br><i>A/Q:</i> {back}"

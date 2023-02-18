@@ -1,5 +1,6 @@
 package deckmarkdown.api
 
+import hashCodeOf
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -11,6 +12,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonObject
+import note.MarkdownParser
 
 interface RepositoryApi {
     suspend fun connected(): Boolean
@@ -76,6 +78,20 @@ data class ApiNote(
 ) : ApiNoteOrText() {
     val hasId get() = noteId != NO_ID
 
+    fun field(name: String): String = fieldOrNull(name)
+        ?: error("Missing required field $name")
+
+    fun fieldOrNull(name: String): String? = fields[name]
+        ?.let(MarkdownParser::ankiToMarkdown)
+
+    override fun equals(other: Any?): Boolean =
+        other is ApiNote &&
+        deckName == other.deckName &&
+        modelName == other.modelName &&
+        fields == other.fields
+
+    override fun hashCode(): Int = hashCodeOf(deckName, modelName, fields)
+
     companion object {
         const val NO_ID = -1L
 
@@ -84,6 +100,9 @@ data class ApiNote(
 
         fun cloze(id: Long, deckName: String, text: String) =
             ApiNote(noteId = id, deckName = deckName, modelName = "Cloze", fields = mapOf("Text" to text))
+
+        fun fieldsOf(vararg nameToValue: Pair<String, String>): Map<String, String> =
+            nameToValue.toMap().mapValues { (_, value) -> value.let(MarkdownParser::markdownToAnki) }
     }
 }
 

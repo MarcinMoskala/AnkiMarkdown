@@ -8,7 +8,6 @@ import note.MarkdownParser
 object ReminderParser : FullNoteProcessor<Reminder> {
     private val PATTERN = "[Rr](eminder)?:([\\s\\S]+)".toRegex()
     private const val API_NOTE_NAME = "Reminder"
-    private val mdParser = MarkdownParser
 
     override fun handlesNote(note: Note): Boolean = note is Reminder
 
@@ -25,15 +24,15 @@ object ReminderParser : FullNoteProcessor<Reminder> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = "Reminder",
-        fields = mapOf(
-            "Front" to note.text.let(mdParser::markdownToAnki),
-            "Extra" to comment.let(mdParser::markdownToAnki)
+        fields = ApiNote.fieldsOf(
+            "Front" to note.text,
+            "Extra" to comment
         )
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): Reminder = Reminder(
         apiNote.noteId,
-        apiNote.fields.getValue("Front").let(mdParser::ankiToMarkdown)
+        apiNote.field("Front")
     )
 
     override fun toHtml(note: Reminder): String = note.text

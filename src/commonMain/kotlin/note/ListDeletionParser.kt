@@ -9,7 +9,6 @@ import note.MarkdownParser
 object ListDeletionParser : FullNoteProcessor<ListDeletion> {
     private val LIST_QUESTION_REGEX = "^([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()
     private val LIST_ITEM_REGEX = "\\*\\s*([^\\n]*)(\\n([^*]*))?".toRegex()
-    private val mdParser = MarkdownParser
 
     private val API_NOTE_TO_TYPE = mapOf(
         "ListDeletion" to ListType.List,
@@ -55,35 +54,35 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
         noteId = note.id ?: ApiNote.NO_ID,
         deckName = deckName,
         modelName = API_NOTE_TO_TYPE.reverseLookup(note.type),
-        fields = mapOf(
-            "Title" to note.title.let(mdParser::markdownToAnki),
-            "General Comment" to note.generalComment.let(mdParser::markdownToAnki),
-            "Extra" to comment.let(mdParser::markdownToAnki)
+        fields = ApiNote.fieldsOf(
+            "Title" to note.title,
+            "General Comment" to note.generalComment,
+            "Extra" to comment
         ) + note.items
             .withIndex()
             .flatMap { (index, item) ->
                 val positionStr = "${index + 1}"
                 listOf(
-                    positionStr to item.value.let(mdParser::markdownToAnki),
-                    "$positionStr comment" to item.comment.let(mdParser::markdownToAnki)
+                    positionStr to item.value,
+                    "$positionStr comment" to item.comment
                 )
             }
             .toMap()
     )
 
     override fun ankiNoteToCard(apiNote: ApiNote): ListDeletion = ListDeletion(
-        apiNote.noteId,
-        API_NOTE_TO_TYPE[apiNote.modelName] ?: error("Unsupported model name " + apiNote.modelName),
-        apiNote.fields.getValue("Title").let(mdParser::ankiToMarkdown),
-        (1..20).mapNotNull { i ->
-            val value = apiNote.fields["$i"].takeUnless<String?> { it.isNullOrBlank() } ?: return@mapNotNull null
-            val comment = apiNote.fields["${i} comment"].orEmpty()
+        id = apiNote.noteId,
+        type = API_NOTE_TO_TYPE[apiNote.modelName] ?: error("Unsupported model name " + apiNote.modelName),
+        title = apiNote.field("Title"),
+        items = (1..20).mapNotNull { i ->
+            val value = apiNote.fieldOrNull("$i").takeUnless<String?> { it.isNullOrBlank() } ?: return@mapNotNull null
+            val comment = apiNote.fieldOrNull("${i} comment").orEmpty()
             ListDeletion.Item(
-                value.let(mdParser::ankiToMarkdown),
-                comment.let(mdParser::ankiToMarkdown)
+                value,
+                comment
             )
         },
-        apiNote.fields.getValue("General Comment").let(mdParser::ankiToMarkdown)
+        generalComment = apiNote.field("General Comment")
     )
 
     override fun toHtml(note: ListDeletion): String = "TODO"
