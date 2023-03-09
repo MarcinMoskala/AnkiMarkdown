@@ -1,5 +1,4 @@
 import deckmarkdown.Note
-import deckmarkdown.Note.*
 import deckmarkdown.Note.ListDeletion.Item
 import deckmarkdown.note.DefaultParser
 import kotlin.test.Test

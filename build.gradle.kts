@@ -1,7 +1,7 @@
 import java.util.*
 
 plugins {
-    kotlin("multiplatform") version "1.7.0-RC"
+    kotlin("multiplatform") version "1.8.10"
     kotlin("plugin.serialization") version "1.6.21"
     id("dev.petuska.npm.publish") version "3.0.1"
     java

@@ -6,18 +6,21 @@ sealed class Note {
     data class Basic(
         override val id: Long? = null,
         val front: String,
-        val back: String
+        val back: String,
+        val extra: String? = null,
     ) : Note()
 
     data class BasicAndReverse(
         override val id: Long? = null,
         val front: String,
-        val back: String
+        val back: String,
+        val extra: String? = null,
     ) : Note()
 
     data class Cloze(
         override val id: Long? = null,
-        val text: String
+        val text: String,
+        val extra: String? = null,
     ) : Note()
 
     data class Reminder(

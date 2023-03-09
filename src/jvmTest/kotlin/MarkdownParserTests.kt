@@ -1,7 +1,5 @@
 package note.markdown
 
-import deckmarkdown.Note
-import deckmarkdown.note.DefaultParser
 import note.MarkdownParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
