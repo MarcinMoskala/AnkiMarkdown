@@ -27,6 +27,10 @@ class FakeAnkiApi : RepositoryApi {
         this.notes = notes.toList()
     }
 
+    fun hasNotes(notes: List<ApiNote>) {
+        this.notes = notes
+    }
+
     override suspend fun connected(): Boolean = true
 
     override suspend fun addNote(apiNote: ApiNote): ApiNote {

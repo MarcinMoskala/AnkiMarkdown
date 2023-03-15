@@ -10,6 +10,7 @@ val DefaultParser = DeckParser(
         ReminderParser,
         ListDeletionParser,
         ClozeParser,
+        GeneralParser,
         TextParser
     )
 )

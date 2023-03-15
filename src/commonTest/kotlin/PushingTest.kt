@@ -12,10 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PushingTest {
-    private val fakeApi = FakeAnkiApi()
-    private val connector = AnkiConnector(api = fakeApi)
-    private val deckName = "SOME_DECK_NAME"
+class PushingTest: E2ETest() {
 
     @Test
     fun rawText() = testPush(
@@ -313,6 +310,145 @@ class PushingTest {
         """.trimIndent()
     )
 
+    @Test
+    fun general() = testPush(
+        markdown = """
+            modelName: Special model name (for test)
+            field_a: This is text a
+            field_b: This is text b
+        """.trimIndent(),
+        expectedNotes = listOf(
+            Note.General(
+                modelName = "Special model name (for test)",
+                fields = mapOf(
+                    "field_a" to "This is text a",
+                    "field_b" to "This is text b",
+                )
+            )
+        ),
+        expectedApiNotes = listOf(
+            ApiNote(
+                deckName = deckName,
+                modelName = "Special model name (for test)",
+                fields = mapOf(
+                    "field_a" to "This is text a",
+                    "field_b" to "This is text b",
+                )
+            )
+        ),
+        expectedMarkdown = """
+            @0
+            modelName: Special model name (for test)
+            field_a: This is text a
+            field_b: This is text b
+        """.trimIndent()
+    )
+
+    @Test
+    fun generalMultiline() = testPush(
+        markdown = """
+            modelName: Special 
+            model name (for test)
+            field_a: This is 
+            text a
+            field_b: This is 
+            text b
+        """.trimIndent(),
+        expectedNotes = listOf(
+            Note.General(
+                modelName = "Special \nmodel name (for test)",
+                fields = mapOf(
+                    "field_a" to "This is \ntext a",
+                    "field_b" to "This is \ntext b",
+                )
+            )
+        ),
+        expectedApiNotes = listOf(
+            ApiNote(
+                deckName = deckName,
+                modelName = "Special \nmodel name (for test)",
+                fields = mapOf(
+                    "field_a" to "This is \ntext a",
+                    "field_b" to "This is \ntext b",
+                )
+            )
+        ),
+        expectedMarkdown = """
+            @0
+            modelName: Special 
+            model name (for test)
+            field_a: This is 
+            text a
+            field_b: This is 
+            text b
+        """.trimIndent()
+    )
+
+    @Test
+    fun generalText() = testPush(
+        markdown = """
+            modelName: ABC
+            f1: DEF
+            f2: GHI
+            
+            JKL MNO
+            PRS TUW
+            
+            modelName: Special model name (for test)
+            field_a: This is text a
+            field_b: This is text b
+        """.trimIndent(),
+        expectedNotes = listOf(
+            Note.General(
+                modelName = "ABC",
+                fields = mapOf(
+                    "f1" to "DEF",
+                    "f2" to "GHI",
+                )
+            ),
+            Note.Text("JKL MNO\nPRS TUW"),
+            Note.General(
+                modelName = "Special model name (for test)",
+                fields = mapOf(
+                    "field_a" to "This is text a",
+                    "field_b" to "This is text b",
+                )
+            )
+        ),
+        expectedApiNotes = listOf(
+            ApiNote(
+                deckName = deckName,
+                modelName = "ABC",
+                fields = mapOf(
+                    "f1" to "DEF",
+                    "f2" to "GHI",
+                )
+            ),
+            ApiNote(
+                deckName = deckName,
+                modelName = "Special model name (for test)",
+                fields = mapOf(
+                    "field_a" to "This is text a",
+                    "field_b" to "This is text b",
+                )
+            ),
+        ),
+        expectedMarkdown = """
+            @0
+            modelName: ABC
+            f1: DEF
+            f2: GHI
+            
+            JKL MNO
+            PRS TUW
+            
+            @1
+            modelName: Special model name (for test)
+            field_a: This is text a
+            field_b: This is text b
+        """.trimIndent()
+    )
+
     private fun testPush(
         markdown: String,
         expectedNotes: List<Note>? = null,
@@ -332,51 +468,4 @@ class PushingTest {
         }
         fakeApi.clean()
     }
-
-    private fun basicApi(
-        front: String,
-        back: String,
-        extra: String? = null,
-        noteId: Long = 0
-    ) = ApiNote(
-        noteId, deckName, "Basic", mapOf(
-            BasicParser.FRONT_FIELD to front,
-            BasicParser.BACK_FIELD to back,
-            BasicParser.EXTRA_FIELD to extra.orEmpty(),
-        )
-    )
-
-    private fun basicAndReversedApi(
-        front: String,
-        back: String,
-        extra: String? = null,
-        noteId: Long = 0
-    ) = ApiNote(
-        noteId, deckName, "Basic (and reversed card)", mapOf(
-            BasicParser.FRONT_FIELD to front,
-            BasicParser.BACK_FIELD to back,
-            BasicParser.EXTRA_FIELD to extra.orEmpty(),
-        )
-    )
-
-    private fun listApi(
-        title: String,
-        items: Map<String, String>,
-        generalComment: String = "",
-        extra: String = "",
-        noteId: Long = 0
-    ) = ApiNote(
-        noteId, deckName, "ListDeletion", mapOf(
-            "Title" to title,
-            "General Comment" to generalComment,
-            "Extra" to extra,
-            *items.toList().flatMapIndexed { index: Int, (text, comment) ->
-                val num = index + 1
-                listOf(
-                    "$num" to text,
-                    "$num comment" to comment
-                )
-            }.toTypedArray()
-        )
-    )
 }
