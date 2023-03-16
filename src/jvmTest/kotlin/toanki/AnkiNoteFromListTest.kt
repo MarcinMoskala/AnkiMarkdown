@@ -20,7 +20,7 @@ class AnkiNoteFromListTest {
         val note = Note.ListDeletion(
             id = id,
             title = "AAA",
-            generalComment = "General Comment",
+            extra = "General Comment",
             items = listOf(Item("a"), Item("b", "comment"))
         )
         val actual = parser.noteToApiNote(note, deckName, comment)
@@ -30,8 +30,7 @@ class AnkiNoteFromListTest {
             modelName = "ListDeletion",
             fields = mapOf(
                 "Title" to "AAA",
-                "General Comment" to "General Comment",
-                "Extra" to comment,
+                "Extra" to "General Comment",
                 "1" to "a",
                 "1 comment" to "",
                 "2" to "b",

@@ -46,13 +46,30 @@ abstract class E2ETest {
     protected fun listApi(
         title: String,
         items: Map<String, String>,
-        generalComment: String = "",
         extra: String = "",
         noteId: Long = 0
     ) = ApiNote(
         noteId, deckName, "ListDeletion", mapOf(
             "Title" to title,
-            "General Comment" to generalComment,
+            "Extra" to extra,
+            *items.toList().flatMapIndexed { index: Int, (text, comment) ->
+                val num = index + 1
+                listOf(
+                    "$num" to text,
+                    "$num comment" to comment
+                )
+            }.toTypedArray()
+        )
+    )
+
+    protected fun setApi(
+        title: String,
+        items: Map<String, String>,
+        extra: String = "",
+        noteId: Long = 0
+    ) = ApiNote(
+        noteId, deckName, "SetDeletion", mapOf(
+            "Title" to title,
             "Extra" to extra,
             *items.toList().flatMapIndexed { index: Int, (text, comment) ->
                 val num = index + 1

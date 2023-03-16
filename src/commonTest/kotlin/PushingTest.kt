@@ -311,8 +311,45 @@ class PushingTest: E2ETest() {
     )
 
     @Test
-    fun listMultilineComments() = testPush(
+    fun setMultilineCommentsExtra() = testPush(
         markdown = """
+            S: What are HTTP methods?
+            * GET: The GET method requests a representation of the specified resource. 
+            Requests using GET should only retrieve data.
+            * HEAD: The HEAD method asks for a response identical to a GET request, 
+            but without the response body.
+            * POST: The POST method submits an entity to the specified resource, 
+            often causing a change in state or side effects on the server.
+            * DELETE
+            * and others
+            Extra: Those are not all the methods, there are also...
+        """.trimIndent(),
+//        expectedNotes = listOf(
+//            Note.ListDeletion(
+//                type = Note.ListDeletion.ListType.Set,
+//                title = "What is the alphabet?",
+//                items = listOf(
+//                    Note.ListDeletion.Item("A"),
+//                    Note.ListDeletion.Item("B"),
+//                    Note.ListDeletion.Item("C"),
+//                )
+//            )
+//        ),
+        expectedApiNotes = listOf(
+            setApi(
+                title = "What are HTTP methods?",
+                items = mapOf(
+                    "GET" to "The GET method requests a representation of the specified resource. \nRequests using GET should only retrieve data.",
+                    "HEAD" to "The HEAD method asks for a response identical to a GET request, \nbut without the response body.",
+                    "POST" to "The POST method submits an entity to the specified resource, \noften causing a change in state or side effects on the server.",
+                    "DELETE" to "",
+                    "and others" to "",
+                ),
+                extra = "Those are not all the methods, there are also..."
+            )
+        ),
+        expectedMarkdown = """
+            @0
             S: What are HTTP methods?
             * GET - The GET method requests a representation of the specified resource. 
             Requests using GET should only retrieve data.
@@ -320,35 +357,9 @@ class PushingTest: E2ETest() {
             but without the response body.
             * POST - The POST method submits an entity to the specified resource, 
             often causing a change in state or side effects on the server.
-            generalComment: Those are not all the methods, there are also...
-        """.trimIndent(),
-        expectedNotes = listOf(
-            Note.ListDeletion(
-                type = Note.ListDeletion.ListType.List,
-                title = "What is the alphabet?",
-                items = listOf(
-                    Note.ListDeletion.Item("A"),
-                    Note.ListDeletion.Item("B"),
-                    Note.ListDeletion.Item("C"),
-                )
-            )
-        ),
-        expectedApiNotes = listOf(
-            listApi(
-                title = "What is the alphabet?",
-                items = mapOf(
-                    "A" to "",
-                    "B" to "",
-                    "C" to "",
-                )
-            )
-        ),
-        expectedMarkdown = """
-            @0
-            L: What is the alphabet?
-            * A
-            * B
-            * C
+            * DELETE
+            * and others
+            Extra: Those are not all the methods, there are also...
         """.trimIndent()
     )
 

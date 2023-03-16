@@ -28,8 +28,7 @@ class ProcessTests {
                 @10
                 L: AAA
                 * A
-                * B
-                Comment
+                * B - Comment
                 * C
             """
         ).map { it.trimIndent() }

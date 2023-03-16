@@ -71,8 +71,7 @@ a: DDD
 @1
 L: AAA
 * A
-* B
-Comment
+* B - Comment
 * C
         """.trimIndent()
         assertEquals(expected, text)

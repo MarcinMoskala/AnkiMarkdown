@@ -12,15 +12,9 @@ class ParseListDeletionTests {
     private val parser = DeckParser(processors = listOf(ListDeletionParser))
 
     @Test
-    fun `Simple List is parsed correctly, second line is treated as a general comment`() {
+    fun `Simple List is parsed correctly`() {
         val text = """
 L: First 3 letters
-* a
-* b
-* c
-
-L: First 3 letters
-In the English alphabet
 * a
 * b
 * c
@@ -30,11 +24,6 @@ In the English alphabet
                 title = "First 3 letters",
                 items = listOf(Item("a"), Item("b"), Item("c"))
             ),
-            Note.ListDeletion(
-                title = "First 3 letters",
-                generalComment = "In the English alphabet",
-                items = listOf(Item("a"), Item("b"), Item("c"))
-            )
         )
         assertEquals(expected, parser.parseNotes(text))
     }
@@ -43,14 +32,11 @@ In the English alphabet
     fun `A lines below item is understood as a comment`() {
         val text = """
 L: First 3 letters
-* a
-aaaaa
+* a: aaaaa
 next
 and more
-* b
-bbbbb
-* c
-ccccc
+* b: bbbbb
+* c: ccccc
         """.trimIndent()
         val expected = listOf<Note>(
             Note.ListDeletion(

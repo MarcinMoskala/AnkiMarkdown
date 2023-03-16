@@ -4,11 +4,11 @@ import deckmarkdown.Note
 import deckmarkdown.Note.ListDeletion
 import deckmarkdown.Note.ListDeletion.ListType
 import deckmarkdown.api.ApiNote
-import note.MarkdownParser
+import deckmarkdown.recognizeKeyValueLines
 
 object ListDeletionParser : FullNoteProcessor<ListDeletion> {
-    private val LIST_QUESTION_REGEX = "^([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()
-    private val LIST_ITEM_REGEX = "\\*\\s*([^\\n]*)(\\n([^*]*))?".toRegex()
+    private val LIST_QUESTION_START_REGEX = "^([LlSs]):([^\\n]+)\\n([^*]*)\\*".toRegex()
+    private val LIST_ITEM_REGEX = "\\*\\s*([^\\n:]+)((: (([^\\n]*)(\\n([^*]*))))?)".toRegex()
 
     private val API_NOTE_TO_TYPE = mapOf(
         "ListDeletion" to ListType.List,
@@ -17,36 +17,42 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
 
     override fun handlesNote(note: Note): Boolean = note is ListDeletion
 
-    override fun recognize(text: String): Boolean = LIST_QUESTION_REGEX in text
+    override fun recognize(text: String): Boolean = LIST_QUESTION_START_REGEX in text
 
     override fun parse(id: Long?, noteText: String): ListDeletion {
-        val parsedStart = checkNotNull(LIST_QUESTION_REGEX.find(noteText))
-        val prefix = parsedStart.groupValues[1]
-        val question = parsedStart.groupValues[2].trim().trimEnd()
-        val generalComment = parsedStart.groupValues[3].trim().trimEnd()
+        val map = noteText.recognizeKeyValueLines() ?: error("There must be a key, at least S: or L:")
+        val (prefix, titleAndItemsText) = map.toList().first()
+        val title = titleAndItemsText.substringBefore("\n").trim()
+        val points = titleAndItemsText.substringAfter("\n")
 
         val listType = when (prefix.lowercase()) {
             "s" -> ListType.Set
             else -> ListType.List
         }
 
-        val items = LIST_ITEM_REGEX.findAll(noteText)
+        val items = LIST_ITEM_REGEX.findAll(points + "\n")
             .map {
                 val value = it.groupValues[1].trim().trimEnd()
-                val comment = it.groupValues[3].trim().trimEnd()
+                val comment = it.groupValues[4].trim().trimEnd()
                 ListDeletion.Item(value, comment)
             }
             .toList()
 
-        return ListDeletion(id, listType, question, items, generalComment)
+        return ListDeletion(
+            id = id,
+            type = listType,
+            title = title,
+            items = items,
+            extra = map["Extra"] ?: map["extra"] ?: ""
+        )
     }
 
     override fun render(note: ListDeletion): String = "${if (note.type == ListType.List) "L" else "S"}: {question}\n"
         .replace("{question}", note.title)
-        .plus(if (note.generalComment.isNotBlank()) "${note.generalComment}\n" else "")
         .plus(note.items.joinToString(separator = "\n") {
-            if (it.comment.isBlank()) "* ${it.value}" else "* ${it.value}\n${it.comment}"
+            if (it.comment.isBlank()) "* ${it.value}" else "* ${it.value} - ${it.comment}"
         })
+        .plus(if (note.extra.isNotBlank()) "\nExtra: ${note.extra}" else "")
 
     override fun recognizeApiNote(apiNote: ApiNote): Boolean = apiNote.modelName in API_NOTE_TO_TYPE.keys
 
@@ -56,8 +62,7 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
         modelName = API_NOTE_TO_TYPE.reverseLookup(note.type),
         fields = ApiNote.fieldsOf(
             "Title" to note.title,
-            "General Comment" to note.generalComment,
-            "Extra" to comment
+            "Extra" to note.extra
         ) + note.items
             .withIndex()
             .flatMap { (index, item) ->
@@ -82,7 +87,7 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
                 comment
             )
         },
-        generalComment = apiNote.field("General Comment")
+        extra = apiNote.field("Extra")
     )
 
     override fun toHtml(note: ListDeletion): String = "TODO"

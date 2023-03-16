@@ -39,7 +39,7 @@ sealed class Note {
         val type: ListType = ListType.List,
         val title: String,
         val items: List<Item>,
-        val generalComment: String = ""
+        val extra: String = ""
     ) : Note() {
         data class Item(val value: String, val comment: String = "")
 
