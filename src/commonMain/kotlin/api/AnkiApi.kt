@@ -215,12 +215,18 @@ class AnkiApi : RepositoryApi {
     override suspend fun storeMediaFile(fileName: String, fileContentBase64: String): Boolean {
         val data = FileNameAndData(fileName, fileContentBase64)
         return request<ResultWithString>("storeMediaFile", json.encodeToString(data))
-            .result == "false"
+            .result != "false"
     }
 
     override suspend fun retrieveMediaFile(fileName: String): String =
-        request<ResultWithString>("retrieveMediaFile", """{ "filename": "$fileName" }}""")
-            .result.orEmpty()
+        request<ResultWithString>("retrieveMediaFile", """{ "filename": "$fileName" }""")
+            .result
+            .orEmpty()
+
+    suspend fun getAllMediaFileNames(): List<String> =
+        request<ResultWithListOfString>("getMediaFilesNames", """{ "pattern": "*" }""")
+            .result
+            .orEmpty()
 
     private suspend fun call(action: String, params: String) {
         val resText = client.post(url) {
@@ -235,7 +241,6 @@ class AnkiApi : RepositoryApi {
             val paramsBody = if (params != null) """, "params": $params""" else ""
             setBody("""{"action": "$action", "version": 6 $paramsBody}""")
         }.body<String>()
-        println(resText)
         return json.decodeFromString(resText)
     }
 }

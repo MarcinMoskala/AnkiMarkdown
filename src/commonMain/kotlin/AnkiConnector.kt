@@ -173,7 +173,7 @@ class HeaderConfig(
     val articleFileName: String? = null,
     val packageDestination: String? = null,
 //    val generalComment: String? = null,
-//    val resourcesFile:String? = null
+//    val resourcesFile: String? = null
 )
 
 @Suppress("ArrayInDataClass")
