@@ -1,10 +1,7 @@
 package ankimarkdown
 
-import ankimarkdown.fakes.FakeAnkiApi
-import deckmarkdown.AnkiConnector
 import deckmarkdown.Note
 import deckmarkdown.api.ApiNote
-import deckmarkdown.note.BasicParser
 import deckmarkdown.note.DefaultParser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -12,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PushingTest: E2ETest() {
+class PushingTest : E2ETest() {
 
     @Test
     fun rawText() = testPush(
@@ -313,6 +310,7 @@ class PushingTest: E2ETest() {
     @Test
     fun setMultilineCommentsExtra() = testPush(
         markdown = """
+            @98754
             S: What are HTTP methods?
             * GET: The GET method requests a representation of the specified resource. 
             Requests using GET should only retrieve data.
@@ -348,19 +346,72 @@ class PushingTest: E2ETest() {
                 extra = "Those are not all the methods, there are also..."
             )
         ),
-        expectedMarkdown = """
-            @0
-            S: What are HTTP methods?
-            * GET - The GET method requests a representation of the specified resource. 
-            Requests using GET should only retrieve data.
-            * HEAD - The HEAD method asks for a response identical to a GET request, 
-            but without the response body.
-            * POST - The POST method submits an entity to the specified resource, 
-            often causing a change in state or side effects on the server.
-            * DELETE
-            * and others
-            Extra: Those are not all the methods, there are also...
-        """.trimIndent()
+        expectMarkdownHasNotChanged = true
+    )
+
+    @Test
+    fun listComplex() = testPush(
+        markdown = """
+            @1677499984568
+            L: Interaction Models
+            * Fire-and-Forget: Fire-and-forget is an optimization of request/response that is useful when a response is not needed. It allows for significant performance optimizations, not just in saved network usage by skipping the response, but also in client and server processing time as no bookkeeping is needed to wait for and associate a response or cancellation request.
+            ```
+            Future<Void> completionSignalOfSend = socketClient.fireAndForget(message);
+            ```
+            * Request/Response: Standard request/response semantics are still supported, and still expected to represent the majority of requests over a RSocket connection. These request/response interactions can be considered optimized “streams of only 1 response”, and are asynchronous messages multiplexed over a single connection.
+            ```
+            Future<Payload> response = socketClient.requestResponse(requestPayload);
+            ```
+            * Request/Stream: Extending from request/response is request/stream, which allows multiple messages to be streamed back. Think of this as a “collection” or “list” response, but instead of getting back all the data as a single response, each element is streamed back in order.
+            Use cases could include things like:
+            fetching a list of videos
+            fetching products in a catalog
+            retrieving a file line-by-line
+            ```
+            Publisher<Payload> response = socketClient.requestStream(requestPayload);
+            ```
+            * Channel: A channel is bi-directional, with a stream of messages in both directions. An example use case that benefits from this interaction model is: client requests a stream of data that initially bursts the current view of the world deltas/diffs are emitted from server to client as changes occur client updates the subscription over time to add/remove criteria/topics/etc. Without a bi-directional channel, the client would have to cancel the initial request, re-request, and receive all data from scratch, rather than just updating the subscription and efficiently getting just the difference.
+            ```
+            Publisher<Payload> output = socketClient.requestChannel(Publisher<Payload> input);
+            ```
+        """.trimIndent(),
+        expectedApiNotes = listOf(
+            listApi(
+                noteId = 1677499984568,
+                title = "Interaction Models",
+                items = mapOf(
+                    "Fire-and-Forget" to """
+                        Fire-and-forget is an optimization of request/response that is useful when a response is not needed. It allows for significant performance optimizations, not just in saved network usage by skipping the response, but also in client and server processing time as no bookkeeping is needed to wait for and associate a response or cancellation request.
+                        ```
+                        Future<Void> completionSignalOfSend = socketClient.fireAndForget(message);
+                        ```
+                    """.trimIndent(),
+                    "Request/Response" to """
+                        Standard request/response semantics are still supported, and still expected to represent the majority of requests over a RSocket connection. These request/response interactions can be considered optimized “streams of only 1 response”, and are asynchronous messages multiplexed over a single connection.
+                        ```
+                        Future<Payload> response = socketClient.requestResponse(requestPayload);
+                        ```
+                    """.trimIndent(),
+                    "Request/Stream" to """
+                        Extending from request/response is request/stream, which allows multiple messages to be streamed back. Think of this as a “collection” or “list” response, but instead of getting back all the data as a single response, each element is streamed back in order.
+                        Use cases could include things like:
+                        fetching a list of videos
+                        fetching products in a catalog
+                        retrieving a file line-by-line
+                        ```
+                        Publisher<Payload> response = socketClient.requestStream(requestPayload);
+                        ```
+                    """.trimIndent(),
+                    "Channel" to """
+                        A channel is bi-directional, with a stream of messages in both directions. An example use case that benefits from this interaction model is: client requests a stream of data that initially bursts the current view of the world deltas/diffs are emitted from server to client as changes occur client updates the subscription over time to add/remove criteria/topics/etc. Without a bi-directional channel, the client would have to cancel the initial request, re-request, and receive all data from scratch, rather than just updating the subscription and efficiently getting just the difference.
+                        ```
+                        Publisher<Payload> output = socketClient.requestChannel(Publisher<Payload> input);
+                        ```
+                    """.trimIndent(),
+                ),
+            )
+        ),
+        expectMarkdownHasNotChanged = true,
     )
 
     @Test
@@ -507,6 +558,7 @@ class PushingTest: E2ETest() {
         expectedNotes: List<Note>? = null,
         expectedApiNotes: List<ApiNote>? = null,
         expectedMarkdown: String? = null,
+        expectMarkdownHasNotChanged: Boolean = false,
     ) = runTest {
         if (expectedNotes != null) {
             assertEquals(expectedNotes, DefaultParser.parseNotes(markdown))
@@ -518,6 +570,9 @@ class PushingTest: E2ETest() {
         }
         if (expectedMarkdown != null) {
             assertEquals(expectedMarkdown, res.markdown)
+        }
+        if (expectMarkdownHasNotChanged) {
+            assertEquals(markdown, res.markdown)
         }
         fakeApi.clean()
     }

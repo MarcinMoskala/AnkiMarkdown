@@ -50,7 +50,7 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
     override fun render(note: ListDeletion): String = "${if (note.type == ListType.List) "L" else "S"}: {question}\n"
         .replace("{question}", note.title)
         .plus(note.items.joinToString(separator = "\n") {
-            if (it.comment.isBlank()) "* ${it.value}" else "* ${it.value} - ${it.comment}"
+            if (it.comment.isBlank()) "* ${it.value}" else "* ${it.value}: ${it.comment}"
         })
         .plus(if (note.extra.isNotBlank()) "\nExtra: ${note.extra}" else "")
 
