@@ -5,6 +5,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -231,7 +232,7 @@ class AnkiApi : RepositoryApi {
     private suspend fun call(action: String, params: String) {
         val resText = client.post(url) {
             setBody("""{"action": "$action", "version": 6, "params": $params}""")
-        }.body<String>()
+        }.bodyAsText()
         val res = json.parseToJsonElement(resText)
         if (res.jsonObject["error"] != JsonNull) throw Error("${res.jsonObject["error"]} for $action and params $params")
     }
@@ -240,7 +241,7 @@ class AnkiApi : RepositoryApi {
         val resText = client.post(url) {
             val paramsBody = if (params != null) """, "params": $params""" else ""
             setBody("""{"action": "$action", "version": 6 $paramsBody}""")
-        }.body<String>()
+        }.bodyAsText()
         return json.decodeFromString(resText)
     }
 }
