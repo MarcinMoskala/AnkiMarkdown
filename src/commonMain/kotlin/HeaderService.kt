@@ -14,11 +14,11 @@ internal class HeaderService {
     fun separateHeaderFromFile(fileContent: String): HeaderSeparationResult {
         val matchResult = Regex("""^(---([\w\W]*)\n---[\n]+)([\w\W]*)""")
             .find(fileContent.trim())
-            ?: throw FileMustHaveHeader
+            ?: throw FileMustHaveHeader()
         val markdown = matchResult.groupValues[3]
         val originalHeader = matchResult.groupValues[1]
         val headerContent = matchResult.groupValues[2]
-        if (HeaderConfig::deckName.name !in headerContent) throw HeaderMustSpecifyName
+        if (HeaderConfig::deckName.name !in headerContent) throw HeaderMustSpecifyName()
         val headerConfig = yaml.decodeFromString(HeaderConfig.serializer(), headerContent)
         return HeaderSeparationResult(markdown, headerConfig, originalHeader)
     }

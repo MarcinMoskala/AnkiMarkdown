@@ -133,6 +133,7 @@ class AnkiConnector(
                     apiNote
                 } else {
                     updatedCount++
+                    println("Updated from: \nFrom: $currentApiNote\nTo:   $apiNote")
                     api.updateNoteFields(apiNote)
                 }
             } else {
@@ -163,8 +164,8 @@ class AnkiConnector(
         api.retrieveMediaFile(fileName)
 }
 
-object FileMustHaveHeader : Exception("File must have header")
-object HeaderMustSpecifyName : Exception("Header must specify name")
+class FileMustHaveHeader : Exception("File must have header")
+class HeaderMustSpecifyName : Exception("Header must specify name")
 
 @JsExport
 @Serializable

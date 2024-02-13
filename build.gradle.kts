@@ -1,14 +1,14 @@
 import java.util.*
 
 plugins {
-    kotlin("multiplatform") version "1.8.10"
-    kotlin("plugin.serialization") version "1.6.21"
-    id("dev.petuska.npm.publish") version "3.0.1"
+    kotlin("multiplatform") version "1.9.21"
+    kotlin("plugin.serialization") version "1.9.22"
+    id("dev.petuska.npm.publish") version "3.4.2"
     java
 }
 
 group = "com.marcinmoskala"
-val libVersion =  "0.0.31"
+val libVersion =  "0.0.43"
 version = libVersion
 
 repositories {
@@ -29,19 +29,23 @@ kotlin {
     js(IR) {
         browser()
         binaries.library()
+        // Uncomment for running locally
+//        binaries.executable()
     }
     sourceSets {
-        val ktorVersion = "2.0.3"
+        val ktorVersion = "2.3.7"
+        val coroutinesVersion = "1.8.0-RC2"
 
         val commonMain by getting {
             dependencies {
-                implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-                implementation("net.mamoe.yamlkt:yamlkt:0.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+                implementation("net.mamoe.yamlkt:yamlkt:0.13.0")
 
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+                implementation("io.ktor:ktor-client-logging:$ktorVersion")
             }
         }
         val commonTest by getting {
@@ -53,6 +57,8 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:$coroutinesVersion")
+                // ...
             }
         }
         val jvmTest by getting

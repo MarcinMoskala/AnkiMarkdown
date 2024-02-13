@@ -20,7 +20,7 @@ object ListDeletionParser : FullNoteProcessor<ListDeletion> {
     override fun recognize(text: String): Boolean = LIST_QUESTION_START_REGEX in text
 
     override fun parse(id: Long?, noteText: String): ListDeletion {
-        val map = noteText.recognizeKeyValueLines() ?: error("There must be a key, at least S: or L:")
+        val map = noteText.recognizeKeyValueLines() ?: error("There must be a key, at least S: or L: in the text $noteText")
         val (prefix, titleAndItemsText) = map.toList().first()
         val title = titleAndItemsText.substringBefore("\n").trim()
         val points = titleAndItemsText.substringAfter("\n")

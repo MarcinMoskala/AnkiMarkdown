@@ -4,6 +4,7 @@ import deckmarkdown.hashCodeOf
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
@@ -89,7 +90,7 @@ data class ApiNote(
         other is ApiNote &&
         deckName == other.deckName &&
         modelName == other.modelName &&
-        fields == other.fields
+        fields.filter { it.value.isNotBlank() } == other.fields.filter { it.value.isNotBlank() }
 
     override fun hashCode(): Int = hashCodeOf(deckName, modelName, fields)
 
@@ -150,11 +151,17 @@ class AnkiApi : RepositoryApi {
         install(ContentNegotiation) {
             json()
         }
+        install(Logging) {
+            logger = Logger.DEFAULT
+            level = LogLevel.ALL
+        }
     }
 
     override suspend fun connected(): Boolean = try {
         client.post(url).status.value in 100..300
     } catch (exception: Throwable) {
+        println("Anki not connected: $exception")
+        exception.printStackTrace()
         false
     }
 
@@ -172,7 +179,7 @@ class AnkiApi : RepositoryApi {
     override suspend fun addNote(apiNote: ApiNote): ApiNote {
         val noteStr = json.encodeToString(apiNote)
         val res = request<ResultWithId>("addNote", """{"note": $noteStr}""")
-        val id = res.result ?: throw Error("Error while adding note $noteStr")
+        val id = res.result ?: throw Error("Error ${res.error} while adding note $noteStr")
         return apiNote.copy(noteId = id)
     }
 
