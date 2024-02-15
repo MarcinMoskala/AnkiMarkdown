@@ -13,7 +13,7 @@ suspend fun main() = coroutineScope<Unit> {
 }
 
 suspend fun AnkiConnectorJvm.syncAllInDict(file: File) {
-    File("/Users/mm/Documents/Notes/Almanach").listFiles()!!.forEach { file ->
+    file.listFiles()!!.forEach { file ->
         if (file.isFile && file.extension == "md") {
             runCatching {
                 val pushResult = pushFile(file)
