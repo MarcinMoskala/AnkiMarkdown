@@ -133,7 +133,6 @@ class AnkiConnector(
                     apiNote
                 } else {
                     updatedCount++
-                    println("Updated from: \nFrom: $currentApiNote\nTo:   $apiNote")
                     api.updateNoteFields(apiNote)
                 }
             } else {
