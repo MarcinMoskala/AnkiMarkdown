@@ -2,13 +2,13 @@ import java.util.*
 
 plugins {
     kotlin("multiplatform") version "1.9.21"
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.23"
     id("dev.petuska.npm.publish") version "3.4.2"
     java
 }
 
 group = "com.marcinmoskala"
-val libVersion =  "0.0.43"
+val libVersion =  "0.0.44"
 version = libVersion
 
 repositories {
@@ -33,8 +33,8 @@ kotlin {
 //        binaries.executable()
     }
     sourceSets {
-        val ktorVersion = "2.3.7"
-        val coroutinesVersion = "1.8.0-RC2"
+        val ktorVersion = "2.3.9"
+        val coroutinesVersion = "1.8.1-Beta"
 
         val commonMain by getting {
             dependencies {
